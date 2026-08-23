@@ -9,6 +9,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  Timestamp,
   updateDoc,
   where,
   writeBatch,
@@ -24,8 +25,12 @@ import {
   Check,
   LogOut,
   MessageCircle,
+  MoreVertical,
+  Pencil,
+  Reply,
   Search,
   Send,
+  Trash2,
   UserPlus,
   X,
 } from "lucide-react";
@@ -80,10 +85,47 @@ function sortMessages(docs) {
     });
 }
 
+function snippet(text, length = 80) {
+  const value = (text || "").trim();
+  if (value.length <= length) return value;
+  return `${value.slice(0, length)}…`;
+}
+
+const ONLINE_STALE_MS = 90_000;
+
+function isUserOnline(presence, now = Date.now()) {
+  if (!presence?.online) return false;
+  const lastSeenMs = presence.lastSeen?.toMillis?.() ?? 0;
+  if (!lastSeenMs) return true;
+  return now - lastSeenMs < ONLINE_STALE_MS;
+}
+
+function formatLastSeen(timestamp) {
+  if (!timestamp?.toDate) return "last seen recently";
+  const date = timestamp.toDate();
+  const now = new Date();
+  const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfThat = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const dayDiff = Math.round((startOfToday - startOfThat) / 86400000);
+  if (dayDiff === 0) return `last seen today at ${time}`;
+  if (dayDiff === 1) return `last seen yesterday at ${time}`;
+  return `last seen ${date.toLocaleDateString([], { month: "short", day: "numeric" })} at ${time}`;
+}
+
 function Avatar({ name, className = "" }) {
   return (
     <div className={`avatar ${className}`.trim()} aria-hidden="true">
       {(name || "?").slice(0, 1).toUpperCase()}
+    </div>
+  );
+}
+
+function PresenceAvatar({ name, online, className = "" }) {
+  return (
+    <div className="presence-avatar">
+      <Avatar name={name} className={className} />
+      {online ? <span className="online-dot" aria-label="online" /> : null}
     </div>
   );
 }
@@ -118,11 +160,20 @@ export default function App() {
   const [incomingMessages, setIncomingMessages] = useState([]);
   const [localReadAt, setLocalReadAt] = useState({});
   const [unreadDivider, setUnreadDivider] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [menuMessageId, setMenuMessageId] = useState(null);
+  const [presenceByUid, setPresenceByUid] = useState({});
+  const [nowTick, setNowTick] = useState(Date.now());
 
   const messagesListRef = useRef(null);
   const unreadDividerRef = useRef(null);
   const alignedForFriend = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const amTypingRef = useRef(false);
+  const composerInputRef = useRef(null);
   const friends = profile?.friends || [];
+  const friendIdsKey = friends.map((friend) => friend.uid).sort().join(",");
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (nextUser) => {
@@ -140,6 +191,10 @@ export default function App() {
         setIncomingMessages([]);
         setLocalReadAt({});
         setUnreadDivider(null);
+        setReplyingTo(null);
+        setEditingMessage(null);
+        setMenuMessageId(null);
+        setPresenceByUid({});
         setChatError("");
         document.title = "Chatter";
       }
@@ -217,8 +272,86 @@ export default function App() {
   }, [user, selectedFriend]);
 
   useEffect(() => {
+    if (!user) return undefined;
+
+    const writePresence = (online) => {
+      updateDoc(doc(db, "users", user.uid), {
+        online,
+        lastSeen: serverTimestamp(),
+        ...(online ? {} : { typingTo: null }),
+      }).catch(() => {});
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") writePresence(true);
+      else writePresence(false);
+    };
+
+    const goOffline = () => writePresence(false);
+
+    writePresence(true);
+    const heartbeat = window.setInterval(() => writePresence(true), 30000);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", goOffline);
+
+    return () => {
+      window.clearInterval(heartbeat);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", goOffline);
+      writePresence(false);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    const tick = window.setInterval(() => setNowTick(Date.now()), 30000);
+    return () => window.clearInterval(tick);
+  }, []);
+
+  useEffect(() => {
+    if (!user || !friendIdsKey) {
+      setPresenceByUid({});
+      return undefined;
+    }
+
+    const ids = friendIdsKey.split(",");
+    const unsubs = ids.map((uid) =>
+      onSnapshot(doc(db, "users", uid), (snap) => {
+        setPresenceByUid((prev) => ({ ...prev, [uid]: snap.data() || null }));
+      }),
+    );
+    return () => unsubs.forEach((unsub) => unsub());
+  }, [user, friendIdsKey]);
+
+  useEffect(() => {
+    if (!user || !selectedFriend) return undefined;
+    return () => {
+      clearTimeout(typingTimeoutRef.current);
+      if (amTypingRef.current) {
+        amTypingRef.current = false;
+        updateDoc(doc(db, "users", user.uid), { typingTo: null }).catch(() => {});
+      }
+    };
+  }, [user, selectedFriend]);
+
+  useEffect(() => {
+    if (!menuMessageId) return undefined;
+    const close = () => setMenuMessageId(null);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [menuMessageId]);
+
+  useEffect(() => {
     alignedForFriend.current = null;
   }, [selectedFriend]);
+
+  const friendPresence = selectedFriend ? presenceByUid[selectedFriend.uid] : null;
+  const friendTyping = friendPresence?.typingTo === user?.uid;
+  const friendOnline = isUserOnline(friendPresence, nowTick);
+  const friendStatus = friendTyping
+    ? "typing…"
+    : friendOnline
+      ? "online"
+      : formatLastSeen(friendPresence?.lastSeen);
 
   useLayoutEffect(() => {
     const list = messagesListRef.current;
@@ -243,7 +376,7 @@ export default function App() {
     scrollToLatest();
     const frame = requestAnimationFrame(scrollToLatest);
     return () => cancelAnimationFrame(frame);
-  }, [messages, unreadDivider, selectedFriend]);
+  }, [messages, unreadDivider, selectedFriend, friendTyping]);
 
   const openChatIncomingCount = incomingMessages.filter(
     (message) => message.senderId === selectedFriend?.uid,
@@ -266,7 +399,7 @@ export default function App() {
       const savedRead = profile?.lastReadAt?.[friend.uid]?.toMillis?.() ?? 0;
       const lastReadMs = Math.max(savedRead, localReadAt[friend.uid] ?? 0);
       counts[friend.uid] = incomingMessages.filter((message) => {
-        if (message.senderId !== friend.uid) return false;
+        if (message.senderId !== friend.uid || message.deleted) return false;
         const sentAt = message.timestamp?.toMillis?.() ?? Date.now();
         return sentAt > lastReadMs;
       }).length;
@@ -319,6 +452,9 @@ export default function App() {
           email: authForm.email.trim(),
           friends: [],
           lastReadAt: {},
+          online: true,
+          lastSeen: serverTimestamp(),
+          typingTo: null,
         });
       } else {
         await signInWithEmailAndPassword(
@@ -335,7 +471,90 @@ export default function App() {
   }
 
   async function handleLogout() {
+    clearTimeout(typingTimeoutRef.current);
+    if (user) {
+      await updateDoc(doc(db, "users", user.uid), {
+        typingTo: null,
+        online: false,
+        lastSeen: serverTimestamp(),
+      }).catch(() => {});
+    }
+    amTypingRef.current = false;
     await signOut(auth);
+  }
+
+  async function setTyping(active) {
+    if (!user || !selectedFriend) return;
+    if (amTypingRef.current === active) return;
+    amTypingRef.current = active;
+    await updateDoc(doc(db, "users", user.uid), {
+      typingTo: active ? selectedFriend.uid : null,
+    }).catch(() => {});
+  }
+
+  function handleDraftChange(value) {
+    setDraft(value);
+    if (editingMessage) return;
+    if (value.trim()) {
+      setTyping(true);
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => setTyping(false), 2000);
+    } else {
+      clearTimeout(typingTimeoutRef.current);
+      setTyping(false);
+    }
+  }
+
+  function clearComposerExtras() {
+    setReplyingTo(null);
+    setEditingMessage(null);
+    setMenuMessageId(null);
+  }
+
+  function startReply(message) {
+    setEditingMessage(null);
+    setReplyingTo(message);
+    setMenuMessageId(null);
+    composerInputRef.current?.focus();
+  }
+
+  function startEdit(message) {
+    if (message.senderId !== user?.uid || message.deleted) return;
+    clearTimeout(typingTimeoutRef.current);
+    setTyping(false);
+    setReplyingTo(null);
+    setEditingMessage(message);
+    setDraft(message.text || "");
+    setMenuMessageId(null);
+    composerInputRef.current?.focus();
+  }
+
+  async function deleteMessage(message) {
+    if (!user || message.senderId !== user.uid) return;
+    setMenuMessageId(null);
+    try {
+      await updateDoc(doc(db, "chats", message.id), {
+        deleted: true,
+        text: "",
+      });
+      if (editingMessage?.id === message.id) {
+        setEditingMessage(null);
+        setDraft("");
+      }
+      if (replyingTo?.id === message.id) {
+        setReplyingTo({ ...message, deleted: true, text: "" });
+      }
+    } catch (error) {
+      setChatError(authErrorMessage(error));
+    }
+  }
+
+  function jumpToMessage(id) {
+    const el = document.getElementById(`msg-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.classList.add("highlight");
+    window.setTimeout(() => el.classList.remove("highlight"), 1400);
   }
 
   async function handleSearch(event) {
@@ -449,6 +668,7 @@ export default function App() {
     setSelectedFriend(friend);
     setMobileShowChat(true);
     setDraft("");
+    clearComposerExtras();
     setLocalReadAt((prev) => ({ ...prev, [friend.uid]: Date.now() }));
   }
 
@@ -466,14 +686,37 @@ export default function App() {
     setSendBusy(true);
     setChatError("");
     try {
-      await addDoc(collection(db, "chats"), {
+      if (editingMessage) {
+        await updateDoc(doc(db, "chats", editingMessage.id), {
+          text,
+          edited: true,
+          editedAt: serverTimestamp(),
+        });
+        setEditingMessage(null);
+        setDraft("");
+        return;
+      }
+
+      const payload = {
         senderId: user.uid,
         receiverId: selectedFriend.uid,
         text,
         timestamp: serverTimestamp(),
         chatId: getChatId(user.uid, selectedFriend.uid),
-      });
+      };
+      if (replyingTo) {
+        payload.replyTo = {
+          id: replyingTo.id,
+          text: replyingTo.deleted ? "" : snippet(replyingTo.text, 140),
+          senderId: replyingTo.senderId,
+          deleted: !!replyingTo.deleted,
+        };
+      }
+      await addDoc(collection(db, "chats"), payload);
       setDraft("");
+      setReplyingTo(null);
+      clearTimeout(typingTimeoutRef.current);
+      await setTyping(false);
     } catch (error) {
       setChatError(authErrorMessage(error));
     } finally {
@@ -676,7 +919,10 @@ export default function App() {
                 onClick={() => openChat(friend)}
               >
                 <div className="user-chip">
-                  <Avatar name={friend.username} />
+                  <PresenceAvatar
+                    name={friend.username}
+                    online={isUserOnline(presenceByUid[friend.uid], nowTick)}
+                  />
                   <strong>{friend.username}</strong>
                 </div>
                 {unread > 0 && (
@@ -701,47 +947,189 @@ export default function App() {
                 >
                   <ArrowLeft size={18} />
                 </button>
-                <Avatar name={selectedFriendLive.username} />
+                <PresenceAvatar name={selectedFriendLive.username} online={friendOnline} />
                 <div>
                   <strong>{selectedFriendLive.username}</strong>
-                  <span>Friend</span>
+                  <span
+                    className={
+                      friendTyping ? "typing-label" : friendOnline ? "online-label" : undefined
+                    }
+                  >
+                    {friendStatus}
+                  </span>
                 </div>
               </div>
             </header>
 
             <div className="messages" ref={messagesListRef}>
               {chatError && <p className="error-banner">{chatError}</p>}
-              {messages.map((message, index) => (
-                <Fragment key={message.id}>
-                  {index === unreadStartIndex && (
-                    <div className="unread-divider" ref={unreadDividerRef}>
-                      <span>
-                        {unreadDivider.count} unread{" "}
-                        {unreadDivider.count === 1 ? "message" : "messages"}
-                      </span>
+              {messages.map((message, index) => {
+                const mine = message.senderId === user.uid;
+                const quoted = message.replyTo;
+                const quotedMine = quoted?.senderId === user.uid;
+                return (
+                  <Fragment key={message.id}>
+                    {index === unreadStartIndex && (
+                      <div className="unread-divider" ref={unreadDividerRef}>
+                        <span>
+                          {unreadDivider.count} unread{" "}
+                          {unreadDivider.count === 1 ? "message" : "messages"}
+                        </span>
+                      </div>
+                    )}
+                    <div
+                      className={`bubble-row ${mine ? "mine" : "theirs"}`}
+                      id={`msg-${message.id}`}
+                    >
+                      <article
+                        className={`bubble ${mine ? "mine" : "theirs"}${message.deleted ? " deleted" : ""}`}
+                        onContextMenu={(event) => {
+                          event.preventDefault();
+                          if (!message.deleted) setMenuMessageId(message.id);
+                        }}
+                      >
+                        {message.deleted ? (
+                          <p className="deleted-text">This message was deleted</p>
+                        ) : (
+                          <>
+                            {quoted && (
+                              <button
+                                type="button"
+                                className="reply-quote"
+                                onClick={() => jumpToMessage(quoted.id)}
+                              >
+                                <strong>
+                                  {quotedMine ? "You" : selectedFriendLive.username}
+                                </strong>
+                                <span>
+                                  {quoted.deleted
+                                    ? "This message was deleted"
+                                    : quoted.text}
+                                </span>
+                              </button>
+                            )}
+                            <p>{message.text}</p>
+                            <time>
+                              {message.edited ? <em>edited </em> : null}
+                              {formatTime(message.timestamp)}
+                            </time>
+                          </>
+                        )}
+                      </article>
+                      {!message.deleted && (
+                        <button
+                          type="button"
+                          className="bubble-more"
+                          title="Message actions"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setMenuMessageId((current) =>
+                              current === message.id ? null : message.id,
+                            );
+                          }}
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                      )}
+                      {menuMessageId === message.id && (
+                        <div
+                          className={`msg-menu ${mine ? "mine" : "theirs"}`}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <button type="button" onClick={() => startReply(message)}>
+                            <Reply size={14} />
+                            Reply
+                          </button>
+                          {mine && (
+                            <button type="button" onClick={() => startEdit(message)}>
+                              <Pencil size={14} />
+                              Edit
+                            </button>
+                          )}
+                          {mine && (
+                            <button
+                              type="button"
+                              className="danger"
+                              onClick={() => deleteMessage(message)}
+                            >
+                              <Trash2 size={14} />
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <article
-                    className={`bubble ${message.senderId === user.uid ? "mine" : "theirs"}`}
-                  >
-                    <p>{message.text}</p>
-                    <time>{formatTime(message.timestamp)}</time>
+                  </Fragment>
+                );
+              })}
+              {friendTyping && (
+                <div className="bubble-row theirs">
+                  <article className="bubble theirs typing-bubble" aria-label="typing">
+                    <span />
+                    <span />
+                    <span />
                   </article>
-                </Fragment>
-              ))}
+                </div>
+              )}
             </div>
 
-            <form className="composer" onSubmit={sendMessage}>
-              <input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="Type a message"
-                aria-label="Message"
-              />
-              <button type="submit" disabled={sendBusy || !draft.trim()} title="Send">
-                <Send size={18} />
-              </button>
-            </form>
+            <div className="composer-wrap">
+              {replyingTo && (
+                <div className="composer-context">
+                  <div>
+                    <strong>
+                      Replying to{" "}
+                      {replyingTo.senderId === user.uid
+                        ? "yourself"
+                        : selectedFriendLive.username}
+                    </strong>
+                    <span>
+                      {replyingTo.deleted
+                        ? "This message was deleted"
+                        : snippet(replyingTo.text)}
+                    </span>
+                  </div>
+                  <button type="button" className="icon-btn" onClick={() => setReplyingTo(null)}>
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+              {editingMessage && (
+                <div className="composer-context edit">
+                  <div>
+                    <strong>Editing message</strong>
+                    <span>{snippet(editingMessage.text)}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    onClick={() => {
+                      setEditingMessage(null);
+                      setDraft("");
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+              <form className="composer" onSubmit={sendMessage}>
+                <input
+                  ref={composerInputRef}
+                  value={draft}
+                  onChange={(e) => handleDraftChange(e.target.value)}
+                  placeholder={editingMessage ? "Edit message" : "Type a message"}
+                  aria-label="Message"
+                />
+                <button
+                  className="composer-send"
+                  type="submit"
+                  disabled={sendBusy || !draft.trim()}
+                  title={editingMessage ? "Save" : "Send"}
+                >
+                  {editingMessage ? <Check size={18} /> : <Send size={18} />}
+                </button>
+              </form>
+            </div>
           </>
         ) : (
           <div className="chat-empty">
