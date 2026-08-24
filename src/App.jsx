@@ -5,11 +5,14 @@ import {
   collection,
   doc,
   getDocs,
+  increment,
+  limit,
   onSnapshot,
+  orderBy,
   query,
   serverTimestamp,
   setDoc,
-  Timestamp,
+  startAfter,
   updateDoc,
   where,
   writeBatch,
@@ -68,22 +71,32 @@ function authErrorMessage(error) {
     case "permission-denied":
       return "Firestore blocked this action. In Firebase Console → Firestore → Rules, allow read/write on the chats collection.";
     case "failed-precondition":
-      return "Firestore needs an index for this query. Open the browser console and click the link to create it.";
+      return "Firestore needs an index for this chat query. Click Create index, wait a minute, then reopen the chat.";
     default:
       return error?.message || "Something went wrong. Try again.";
   }
 }
 
-function sortMessages(docs) {
-  return docs
-    .map((d) => ({ id: d.id, ...d.data() }))
-    .sort((a, b) => {
-      // Pending local writes have no timestamp yet — keep them at the bottom.
-      const ta = a.timestamp?.toMillis?.() ?? Number.MAX_SAFE_INTEGER;
-      const tb = b.timestamp?.toMillis?.() ?? Number.MAX_SAFE_INTEGER;
-      return ta - tb;
-    });
+function getFirestoreIndexUrl(error) {
+  const match = String(error?.message || "").match(
+    /https:\/\/console\.firebase\.google\.com[^\s)]+/,
+  );
+  return match?.[0] || "";
 }
+
+function sortMessages(docs) {
+  return sortMessageList(docs.map((d) => ({ id: d.id, ...d.data() })));
+}
+
+function sortMessageList(list) {
+  return [...list].sort((a, b) => {
+    const ta = a.timestamp?.toMillis?.() ?? Number.MAX_SAFE_INTEGER;
+    const tb = b.timestamp?.toMillis?.() ?? Number.MAX_SAFE_INTEGER;
+    return ta - tb;
+  });
+}
+
+const PAGE_SIZE = 40;
 
 function snippet(text, length = 80) {
   const value = (text || "").trim();
@@ -155,9 +168,8 @@ export default function App() {
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
-  const [sendBusy, setSendBusy] = useState(false);
   const [chatError, setChatError] = useState("");
-  const [incomingMessages, setIncomingMessages] = useState([]);
+  const [chatErrorLink, setChatErrorLink] = useState("");
   const [localReadAt, setLocalReadAt] = useState({});
   const [unreadDivider, setUnreadDivider] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
@@ -165,6 +177,8 @@ export default function App() {
   const [menuMessageId, setMenuMessageId] = useState(null);
   const [presenceByUid, setPresenceByUid] = useState({});
   const [nowTick, setNowTick] = useState(Date.now());
+  const [hasMoreOlder, setHasMoreOlder] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   const messagesListRef = useRef(null);
   const unreadDividerRef = useRef(null);
@@ -172,6 +186,10 @@ export default function App() {
   const typingTimeoutRef = useRef(null);
   const amTypingRef = useRef(false);
   const composerInputRef = useRef(null);
+  const oldestSnapRef = useRef(null);
+  const pagedOlderRef = useRef(false);
+  const loadingOlderRef = useRef(false);
+  const scrollRestoreRef = useRef(null);
   const friends = profile?.friends || [];
   const friendIdsKey = friends.map((friend) => friend.uid).sort().join(",");
 
@@ -188,7 +206,6 @@ export default function App() {
         setOutgoingRequests([]);
         setSearchResult(null);
         setSearchStatus("");
-        setIncomingMessages([]);
         setLocalReadAt({});
         setUnreadDivider(null);
         setReplyingTo(null);
@@ -196,6 +213,7 @@ export default function App() {
         setMenuMessageId(null);
         setPresenceByUid({});
         setChatError("");
+        setChatErrorLink("");
         document.title = "Chatter";
       }
     });
@@ -227,44 +245,55 @@ export default function App() {
       setOutgoingRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
 
-    const inboxQuery = query(
-      collection(db, "chats"),
-      where("receiverId", "==", user.uid),
-    );
-    const unsubInbox = onSnapshot(inboxQuery, (snap) => {
-      setIncomingMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
-
     return () => {
       unsubProfile();
       unsubIncoming();
       unsubOutgoing();
-      unsubInbox();
     };
   }, [user]);
 
   useEffect(() => {
     if (!user || !selectedFriend) {
       setMessages([]);
+      setHasMoreOlder(false);
+      oldestSnapRef.current = null;
+      pagedOlderRef.current = false;
       return undefined;
     }
 
     const chatId = getChatId(user.uid, selectedFriend.uid);
-    // Equality-only query so it works without a composite index.
-    // Sort by timestamp on the client instead of orderBy().
+    oldestSnapRef.current = null;
+    pagedOlderRef.current = false;
+    setHasMoreOlder(true);
+    setMessages([]);
+
     const messagesQuery = query(
       collection(db, "chats"),
       where("chatId", "==", chatId),
+      orderBy("timestamp", "desc"),
+      limit(PAGE_SIZE),
     );
 
     const unsubMessages = onSnapshot(
       messagesQuery,
       (snap) => {
-        setMessages(sortMessages(snap.docs));
+        const live = sortMessages(snap.docs);
+        if (!pagedOlderRef.current && snap.docs.length) {
+          oldestSnapRef.current = snap.docs[snap.docs.length - 1];
+          setHasMoreOlder(snap.docs.length === PAGE_SIZE);
+        }
+        setMessages((prev) => {
+          if (!pagedOlderRef.current) return live;
+          const liveIds = new Set(live.map((message) => message.id));
+          const older = prev.filter((message) => !liveIds.has(message.id));
+          return sortMessageList([...older, ...live]);
+        });
         setChatError("");
+        setChatErrorLink("");
       },
       (error) => {
         setChatError(authErrorMessage(error));
+        setChatErrorLink(getFirestoreIndexUrl(error));
       },
     );
 
@@ -357,6 +386,13 @@ export default function App() {
     const list = messagesListRef.current;
     if (!list || messages.length === 0) return undefined;
 
+    if (scrollRestoreRef.current) {
+      const { height, top } = scrollRestoreRef.current;
+      list.scrollTop = top + (list.scrollHeight - height);
+      scrollRestoreRef.current = null;
+      return undefined;
+    }
+
     const friendId = selectedFriend?.uid;
     const pinToUnreadBanner =
       unreadDividerRef.current &&
@@ -378,16 +414,17 @@ export default function App() {
     return () => cancelAnimationFrame(frame);
   }, [messages, unreadDivider, selectedFriend, friendTyping]);
 
-  const openChatIncomingCount = incomingMessages.filter(
-    (message) => message.senderId === selectedFriend?.uid,
-  ).length;
+  const latestIncomingId = messages
+    .filter((message) => message.senderId === selectedFriend?.uid)
+    .at(-1)?.id;
 
   useEffect(() => {
     if (!user || !selectedFriend) return undefined;
     updateDoc(doc(db, "users", user.uid), {
       [`lastReadAt.${selectedFriend.uid}`]: serverTimestamp(),
+      [`unreadCounts.${selectedFriend.uid}`]: 0,
     }).catch(() => {});
-  }, [user, selectedFriend, openChatIncomingCount]);
+  }, [user, selectedFriend, latestIncomingId]);
 
   const unreadByFriend = useMemo(() => {
     const counts = {};
@@ -396,16 +433,10 @@ export default function App() {
         counts[friend.uid] = 0;
         continue;
       }
-      const savedRead = profile?.lastReadAt?.[friend.uid]?.toMillis?.() ?? 0;
-      const lastReadMs = Math.max(savedRead, localReadAt[friend.uid] ?? 0);
-      counts[friend.uid] = incomingMessages.filter((message) => {
-        if (message.senderId !== friend.uid || message.deleted) return false;
-        const sentAt = message.timestamp?.toMillis?.() ?? Date.now();
-        return sentAt > lastReadMs;
-      }).length;
+      counts[friend.uid] = profile?.unreadCounts?.[friend.uid] || 0;
     }
     return counts;
-  }, [friends, incomingMessages, localReadAt, profile, selectedFriend]);
+  }, [friends, profile, selectedFriend]);
 
   const totalUnread = Object.values(unreadByFriend).reduce((sum, n) => sum + n, 0);
 
@@ -452,6 +483,7 @@ export default function App() {
           email: authForm.email.trim(),
           friends: [],
           lastReadAt: {},
+          unreadCounts: {},
           online: true,
           lastSeen: serverTimestamp(),
           typingTo: null,
@@ -652,13 +684,9 @@ export default function App() {
   }
 
   function openChat(friend) {
+    const unread = profile?.unreadCounts?.[friend.uid] || 0;
     const savedRead = profile?.lastReadAt?.[friend.uid]?.toMillis?.() ?? 0;
     const lastReadMs = Math.max(savedRead, localReadAt[friend.uid] ?? 0);
-    const unread = incomingMessages.filter((message) => {
-      if (message.senderId !== friend.uid) return false;
-      const sentAt = message.timestamp?.toMillis?.() ?? Date.now();
-      return sentAt > lastReadMs;
-    }).length;
 
     setUnreadDivider(
       unread > 0
@@ -672,6 +700,57 @@ export default function App() {
     setLocalReadAt((prev) => ({ ...prev, [friend.uid]: Date.now() }));
   }
 
+  async function loadOlderMessages() {
+    if (!user || !selectedFriend || loadingOlderRef.current || !hasMoreOlder) return;
+    if (!oldestSnapRef.current) return;
+
+    loadingOlderRef.current = true;
+    setLoadingOlder(true);
+    try {
+      const chatId = getChatId(user.uid, selectedFriend.uid);
+      const page = await getDocs(
+        query(
+          collection(db, "chats"),
+          where("chatId", "==", chatId),
+          orderBy("timestamp", "desc"),
+          startAfter(oldestSnapRef.current),
+          limit(PAGE_SIZE),
+        ),
+      );
+      const older = sortMessages(page.docs);
+      if (page.docs.length > 0) {
+        oldestSnapRef.current = page.docs[page.docs.length - 1];
+        pagedOlderRef.current = true;
+        const list = messagesListRef.current;
+        if (list) {
+          scrollRestoreRef.current = {
+            height: list.scrollHeight,
+            top: list.scrollTop,
+          };
+        }
+        setMessages((prev) => {
+          const ids = new Set(prev.map((message) => message.id));
+          return sortMessageList([
+            ...older.filter((message) => !ids.has(message.id)),
+            ...prev,
+          ]);
+        });
+      }
+      setHasMoreOlder(page.docs.length === PAGE_SIZE);
+    } catch (error) {
+      setChatError(authErrorMessage(error));
+    } finally {
+      loadingOlderRef.current = false;
+      setLoadingOlder(false);
+    }
+  }
+
+  function onMessagesScroll(event) {
+    if (event.currentTarget.scrollTop < 80) {
+      loadOlderMessages();
+    }
+  }
+
   function closeChat() {
     setMobileShowChat(false);
   }
@@ -683,17 +762,23 @@ export default function App() {
     const text = draft.trim();
     if (!text) return;
 
-    setSendBusy(true);
+    const wasEditing = editingMessage;
+    const wasReply = replyingTo;
+    setDraft("");
+    setReplyingTo(null);
+    setEditingMessage(null);
     setChatError("");
+    clearTimeout(typingTimeoutRef.current);
+    setTyping(false);
+    requestAnimationFrame(() => composerInputRef.current?.focus());
+
     try {
-      if (editingMessage) {
-        await updateDoc(doc(db, "chats", editingMessage.id), {
+      if (wasEditing) {
+        await updateDoc(doc(db, "chats", wasEditing.id), {
           text,
           edited: true,
           editedAt: serverTimestamp(),
         });
-        setEditingMessage(null);
-        setDraft("");
         return;
       }
 
@@ -704,23 +789,26 @@ export default function App() {
         timestamp: serverTimestamp(),
         chatId: getChatId(user.uid, selectedFriend.uid),
       };
-      if (replyingTo) {
+      if (wasReply) {
         payload.replyTo = {
-          id: replyingTo.id,
-          text: replyingTo.deleted ? "" : snippet(replyingTo.text, 140),
-          senderId: replyingTo.senderId,
-          deleted: !!replyingTo.deleted,
+          id: wasReply.id,
+          text: wasReply.deleted ? "" : snippet(wasReply.text, 140),
+          senderId: wasReply.senderId,
+          deleted: !!wasReply.deleted,
         };
       }
-      await addDoc(collection(db, "chats"), payload);
-      setDraft("");
-      setReplyingTo(null);
-      clearTimeout(typingTimeoutRef.current);
-      await setTyping(false);
+      const messageRef = doc(collection(db, "chats"));
+      const batch = writeBatch(db);
+      batch.set(messageRef, payload);
+      batch.update(doc(db, "users", selectedFriend.uid), {
+        [`unreadCounts.${user.uid}`]: increment(1),
+      });
+      await batch.commit();
     } catch (error) {
+      setDraft(text);
+      setReplyingTo(wasReply);
+      setEditingMessage(wasEditing);
       setChatError(authErrorMessage(error));
-    } finally {
-      setSendBusy(false);
     }
   }
 
@@ -961,8 +1049,28 @@ export default function App() {
               </div>
             </header>
 
-            <div className="messages" ref={messagesListRef}>
-              {chatError && <p className="error-banner">{chatError}</p>}
+            <div
+              className="messages"
+              ref={messagesListRef}
+              onScroll={onMessagesScroll}
+            >
+              {chatError && (
+                <p className="error-banner">
+                  {chatError}
+                  {chatErrorLink ? (
+                    <>
+                      {" "}
+                      <a href={chatErrorLink} target="_blank" rel="noreferrer">
+                        Create index
+                      </a>
+                    </>
+                  ) : null}
+                </p>
+              )}
+              {loadingOlder && <p className="history-status">Loading earlier messages…</p>}
+              {!loadingOlder && !hasMoreOlder && messages.length > 0 && (
+                <p className="history-status">Beginning of conversation</p>
+              )}
               {messages.map((message, index) => {
                 const mine = message.senderId === user.uid;
                 const quoted = message.replyTo;
@@ -1119,12 +1227,16 @@ export default function App() {
                   onChange={(e) => handleDraftChange(e.target.value)}
                   placeholder={editingMessage ? "Edit message" : "Type a message"}
                   aria-label="Message"
+                  enterKeyHint="send"
+                  autoComplete="off"
                 />
                 <button
                   className="composer-send"
                   type="submit"
-                  disabled={sendBusy || !draft.trim()}
+                  disabled={!draft.trim()}
                   title={editingMessage ? "Save" : "Send"}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onPointerDown={(event) => event.preventDefault()}
                 >
                   {editingMessage ? <Check size={18} /> : <Send size={18} />}
                 </button>
