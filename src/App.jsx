@@ -26,19 +26,121 @@ import {
 import {
   ArrowLeft,
   Check,
+  Copy,
+  ExternalLink,
+  Flower2,
+  Link,
   LogOut,
   MessageCircle,
+  Moon,
   MoreVertical,
   Pencil,
   Reply,
   Search,
   Send,
+  Ship,
   Trash2,
   UserPlus,
   X,
+  Zap,
 } from "lucide-react";
 import { auth, db } from "./firebase.js";
 import "./App.css";
+import "./themes.css";
+import CyberCity from "./CyberCity.jsx";
+import SakuraTree from "./SakuraTree.jsx";
+import OceanScene from "./OceanScene.jsx";
+
+const THEME_KEY = "chatter-theme";
+
+const PETALS = Array.from({ length: 14 }, (_, i) => ({
+  x: `${(i * 37 + 11) % 100}%`,
+  size: `${10 + ((i * 7) % 9)}px`,
+  dur: `${9 + ((i * 5) % 8)}s`,
+  delay: `${-((i * 13) % 16)}s`,
+  drift: `${i % 2 ? "" : "-"}${30 + ((i * 11) % 50)}px`,
+}));
+
+function SakuraPetals() {
+  return (
+    <div className="petals" aria-hidden="true">
+      {PETALS.map((petal, i) => (
+        <span
+          key={i}
+          className="petal"
+          style={{
+            "--x": petal.x,
+            "--size": petal.size,
+            "--dur": petal.dur,
+            "--delay": petal.delay,
+            "--drift": petal.drift,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+const THEMES = [
+  { id: "dark", label: "Dark", Icon: Moon },
+  { id: "sakura", label: "Sakura", Icon: Flower2 },
+  { id: "cyberpunk", label: "Cyberpunk", Icon: Zap },
+  { id: "onepiece", label: "One Piece", Icon: Ship },
+];
+
+function ThemePicker({ theme, onChange }) {
+  const [open, setOpen] = useState(false);
+  const current = THEMES.find((option) => option.id === theme) || THEMES[0];
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = () => setOpen(false);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [open]);
+
+  return (
+    <div className="theme-picker">
+      <button
+        className="icon-btn theme-toggle"
+        type="button"
+        title="Change theme"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen((value) => !value);
+        }}
+      >
+        <current.Icon size={18} />
+        <span className="sr-only">Change theme</span>
+      </button>
+      {open && (
+        <div className="theme-menu" role="menu" onClick={(event) => event.stopPropagation()}>
+          {THEMES.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              type="button"
+              role="menuitemradio"
+              aria-checked={id === theme}
+              className={id === theme ? "active" : undefined}
+              onClick={() => {
+                onChange(id);
+                setOpen(false);
+              }}
+            >
+              <span className={`theme-swatch ${id}`}>
+                <Icon size={14} />
+              </span>
+              {label}
+              {id === theme && <Check size={14} className="theme-check" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function getChatId(a, b) {
   return [a, b].sort().join("_");
@@ -98,6 +200,59 @@ function sortMessageList(list) {
 
 const PAGE_SIZE = 40;
 
+const URL_PATTERN = /((?:https?:\/\/|www\.)[^\s<>"]+)/gi;
+const TRAILING_PUNCTUATION = /[.,!?;:'")\]}]+$/;
+
+function toHref(raw) {
+  const candidate = /^www\./i.test(raw) ? `https://${raw}` : raw;
+  try {
+    const url = new URL(candidate);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function splitLinks(text) {
+  const parts = [];
+  let lastIndex = 0;
+  for (const match of (text || "").matchAll(URL_PATTERN)) {
+    let raw = match[0];
+    const trailing = raw.match(TRAILING_PUNCTUATION)?.[0] || "";
+    raw = raw.slice(0, raw.length - trailing.length);
+    const href = toHref(raw);
+    if (!href) continue;
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+    parts.push({ raw, href });
+    lastIndex = match.index + raw.length;
+  }
+  if (lastIndex < (text || "").length) parts.push(text.slice(lastIndex));
+  return parts;
+}
+
+function findLinks(text) {
+  return splitLinks(text).filter((part) => typeof part !== "string");
+}
+
+function LinkifiedText({ text }) {
+  return splitLinks(text).map((part, i) =>
+    typeof part === "string" ? (
+      <Fragment key={i}>{part}</Fragment>
+    ) : (
+      <a
+        key={i}
+        className="msg-link"
+        href={part.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(event) => event.stopPropagation()}
+      >
+        {part.raw}
+      </a>
+    ),
+  );
+}
+
 function snippet(text, length = 80) {
   const value = (text || "").trim();
   if (value.length <= length) return value;
@@ -147,6 +302,10 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [authReady, setAuthReady] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem(THEME_KEY);
+    return THEMES.some((option) => option.id === saved) ? saved : "dark";
+  });
   const [isSignup, setIsSignup] = useState(false);
   const [authForm, setAuthForm] = useState({
     email: "",
@@ -167,6 +326,7 @@ export default function App() {
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [historyIds, setHistoryIds] = useState(() => new Set());
   const [draft, setDraft] = useState("");
   const [chatError, setChatError] = useState("");
   const [chatErrorLink, setChatErrorLink] = useState("");
@@ -175,6 +335,8 @@ export default function App() {
   const [replyingTo, setReplyingTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [menuMessageId, setMenuMessageId] = useState(null);
+  const [toast, setToast] = useState("");
+  const toastTimeoutRef = useRef(null);
   const [presenceByUid, setPresenceByUid] = useState({});
   const [nowTick, setNowTick] = useState(Date.now());
   const [hasMoreOlder, setHasMoreOlder] = useState(true);
@@ -192,6 +354,18 @@ export default function App() {
   const scrollRestoreRef = useRef(null);
   const friends = profile?.friends || [];
   const friendIdsKey = friends.map((friend) => friend.uid).sort().join(",");
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
+
+  const themeLayer =
+    theme === "sakura" ? (
+      <SakuraPetals />
+    ) : theme === "cyberpunk" ? (
+      <div className="scanlines" aria-hidden="true" />
+    ) : null;
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (nextUser) => {
@@ -266,6 +440,8 @@ export default function App() {
     pagedOlderRef.current = false;
     setHasMoreOlder(true);
     setMessages([]);
+    setHistoryIds(new Set());
+    let firstSnapshot = true;
 
     const messagesQuery = query(
       collection(db, "chats"),
@@ -278,6 +454,10 @@ export default function App() {
       messagesQuery,
       (snap) => {
         const live = sortMessages(snap.docs);
+        if (firstSnapshot) {
+          firstSnapshot = false;
+          setHistoryIds(new Set(live.map((message) => message.id)));
+        }
         if (!pagedOlderRef.current && snap.docs.length) {
           oldestSnapRef.current = snap.docs[snap.docs.length - 1];
           setHasMoreOlder(snap.docs.length === PAGE_SIZE);
@@ -581,6 +761,27 @@ export default function App() {
     }
   }
 
+  function showToast(text) {
+    setToast(text);
+    clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setToast(""), 1600);
+  }
+
+  async function copyText(text, label) {
+    setMenuMessageId(null);
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(`${label} copied`);
+    } catch {
+      showToast("Couldn't copy — try selecting the text instead");
+    }
+  }
+
+  function openLink(href) {
+    setMenuMessageId(null);
+    window.open(href, "_blank", "noopener,noreferrer");
+  }
+
   function jumpToMessage(id) {
     const el = document.getElementById(`msg-${id}`);
     if (!el) return;
@@ -728,6 +929,11 @@ export default function App() {
             top: list.scrollTop,
           };
         }
+        setHistoryIds((prev) => {
+          const next = new Set(prev);
+          older.forEach((message) => next.add(message.id));
+          return next;
+        });
         setMessages((prev) => {
           const ids = new Set(prev.map((message) => message.id));
           return sortMessageList([
@@ -823,8 +1029,10 @@ export default function App() {
   if (!user) {
     return (
       <div className="app-root">
+        {themeLayer}
         <div className="auth-screen">
           <div className="auth-card">
+            <ThemePicker theme={theme} onChange={setTheme} />
             <div className="auth-brand">
               <div className="brand-icon">
                 <MessageCircle size={22} />
@@ -908,6 +1116,7 @@ export default function App() {
 
   return (
     <div className={`app-root app-shell${mobileShowChat ? " chat-open" : ""}`}>
+      {themeLayer}
       <aside className="sidebar">
         <header className="sidebar-header">
           <div className="user-chip">
@@ -917,10 +1126,13 @@ export default function App() {
               <span>{profile?.email || user.email}</span>
             </div>
           </div>
-          <button className="icon-btn" type="button" onClick={handleLogout} title="Log out">
-            <LogOut size={18} />
-            <span className="sr-only">Log out</span>
-          </button>
+          <div className="header-actions">
+            <ThemePicker theme={theme} onChange={setTheme} />
+            <button className="icon-btn" type="button" onClick={handleLogout} title="Log out">
+              <LogOut size={18} />
+              <span className="sr-only">Log out</span>
+            </button>
+          </div>
         </header>
 
         <form className="search-form" onSubmit={handleSearch}>
@@ -1023,6 +1235,9 @@ export default function App() {
       </aside>
 
       <section className="chat-pane">
+        {theme === "cyberpunk" && <CyberCity />}
+        {theme === "sakura" && <SakuraTree />}
+        {theme === "onepiece" && <OceanScene />}
         {selectedFriendLive ? (
           <>
             <header className="chat-header">
@@ -1075,6 +1290,12 @@ export default function App() {
                 const mine = message.senderId === user.uid;
                 const quoted = message.replyTo;
                 const quotedMine = quoted?.senderId === user.uid;
+                const groupStart =
+                  index === 0 ||
+                  index === unreadStartIndex ||
+                  messages[index - 1].senderId !== message.senderId;
+                const fresh = !historyIds.has(message.id);
+                const links = menuMessageId === message.id ? findLinks(message.text) : [];
                 return (
                   <Fragment key={message.id}>
                     {index === unreadStartIndex && (
@@ -1086,11 +1307,11 @@ export default function App() {
                       </div>
                     )}
                     <div
-                      className={`bubble-row ${mine ? "mine" : "theirs"}`}
+                      className={`bubble-row ${mine ? "mine" : "theirs"}${groupStart ? " group-start" : ""}`}
                       id={`msg-${message.id}`}
                     >
                       <article
-                        className={`bubble ${mine ? "mine" : "theirs"}${message.deleted ? " deleted" : ""}`}
+                        className={`bubble ${mine ? "mine" : "theirs"}${groupStart ? " tail" : ""}${fresh ? " pop-in" : ""}${message.deleted ? " deleted" : ""}`}
                         onContextMenu={(event) => {
                           event.preventDefault();
                           if (!message.deleted) setMenuMessageId(message.id);
@@ -1116,7 +1337,9 @@ export default function App() {
                                 </span>
                               </button>
                             )}
-                            <p>{message.text}</p>
+                            <p>
+                              <LinkifiedText text={message.text} />
+                            </p>
                             <time>
                               {message.edited ? <em>edited </em> : null}
                               {formatTime(message.timestamp)}
@@ -1148,6 +1371,25 @@ export default function App() {
                             <Reply size={14} />
                             Reply
                           </button>
+                          <button type="button" onClick={() => copyText(message.text, "Message")}>
+                            <Copy size={14} />
+                            Copy
+                          </button>
+                          {links.length > 0 && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => copyText(links[0].href, "Link")}
+                              >
+                                <Link size={14} />
+                                Copy link
+                              </button>
+                              <button type="button" onClick={() => openLink(links[0].href)}>
+                                <ExternalLink size={14} />
+                                Open link
+                              </button>
+                            </>
+                          )}
                           {mine && (
                             <button type="button" onClick={() => startEdit(message)}>
                               <Pencil size={14} />
@@ -1171,8 +1413,8 @@ export default function App() {
                 );
               })}
               {friendTyping && (
-                <div className="bubble-row theirs">
-                  <article className="bubble theirs typing-bubble" aria-label="typing">
+                <div className="bubble-row theirs group-start">
+                  <article className="bubble theirs tail pop-in typing-bubble" aria-label="typing">
                     <span />
                     <span />
                     <span />
@@ -1251,6 +1493,11 @@ export default function App() {
           </div>
         )}
       </section>
+      {toast && (
+        <div className="toast" role="status">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

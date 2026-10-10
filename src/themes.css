@@ -1,0 +1,1532 @@
+/* ---------- Sakura theme ---------- */
+
+:root[data-theme="sakura"] {
+  --wa-bg: #e9d3da;
+  --wa-panel: #efdde3;
+  --wa-header: #e2c1cc;
+  --wa-hover: #e7cbd4;
+  --wa-active: #dcb2c0;
+  --wa-border: #d4a6b6;
+  --wa-input: #f6e9ee;
+  --wa-text: #4a2333;
+  --wa-muted: #8a5a6b;
+  --wa-green: #c4527a;
+  --wa-green-hover: #d4698f;
+  --wa-outgoing: #eeb5c8;
+  --wa-incoming: #f7ecf0;
+  --wa-danger: #b8324f;
+  --wa-shadow: 0 8px 32px rgba(122, 52, 78, 0.22);
+  color-scheme: light;
+}
+
+:root[data-theme="sakura"] body {
+  font-family: "Patrick Hand", "Segoe Print", "Comic Sans MS", cursive;
+  font-size: 17px;
+  letter-spacing: 0.01em;
+}
+
+:root[data-theme="sakura"],
+:root[data-theme="sakura"] body,
+:root[data-theme="sakura"] #root {
+  background: var(--wa-bg);
+}
+
+[data-theme="sakura"] .auth-brand h1,
+[data-theme="sakura"] .chat-empty h2,
+[data-theme="sakura"] .chat-peer strong {
+  font-family: "Dancing Script", cursive;
+  font-weight: 700;
+}
+
+[data-theme="sakura"] .auth-brand h1 {
+  font-size: 2.2rem;
+  color: var(--wa-green);
+}
+
+[data-theme="sakura"] .chat-peer strong {
+  font-size: 1.3rem;
+  line-height: 1.1;
+}
+
+[data-theme="sakura"] .chat-empty h2 {
+  font-size: 2rem;
+}
+
+[data-theme="sakura"] .chat-empty svg {
+  color: var(--wa-green);
+}
+
+/* Text sitting on the accent color */
+[data-theme="sakura"] .brand-icon,
+[data-theme="sakura"] .primary-btn,
+[data-theme="sakura"] .avatar.green,
+[data-theme="sakura"] .search-form button,
+[data-theme="sakura"] .composer-send,
+[data-theme="sakura"] .unread-badge,
+[data-theme="sakura"] .add-btn,
+[data-theme="sakura"] .request-btn.accept {
+  color: #fff;
+}
+
+[data-theme="sakura"] .auth-screen {
+  background:
+    radial-gradient(circle at 15% 10%, #e8b8c8 0%, transparent 45%),
+    radial-gradient(circle at 85% 90%, #dcb0c2 0%, transparent 45%),
+    linear-gradient(180deg, #e9d3da 0%, #dcbcc8 100%);
+}
+
+[data-theme="sakura"] .auth-form input,
+[data-theme="sakura"] .search-form input,
+[data-theme="sakura"] .composer input {
+  border: 1px solid var(--wa-border);
+}
+
+[data-theme="sakura"] .auth-form input:focus,
+[data-theme="sakura"] .search-form input:focus,
+[data-theme="sakura"] .composer input:focus {
+  box-shadow: 0 0 0 2px rgba(196, 82, 122, 0.35);
+}
+
+[data-theme="sakura"] .error-banner {
+  background: rgba(184, 50, 79, 0.1);
+  color: var(--wa-danger);
+}
+
+[data-theme="sakura"] .error-banner a {
+  color: var(--wa-danger);
+}
+
+[data-theme="sakura"] .avatar {
+  background: #c9849b;
+  color: #fff;
+}
+
+[data-theme="sakura"] .request-btn.reject {
+  background: #e8c3cc;
+  color: var(--wa-danger);
+}
+
+[data-theme="sakura"] .chat-pane {
+  background: linear-gradient(180deg, #d7b3c2 0%, #e4c6d0 55%, #ecd6dc 100%);
+}
+
+.sakura-scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sakura-moon {
+  position: absolute;
+  top: 8%;
+  right: 10%;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #fff7f0, #f6dccf 70%);
+  box-shadow: 0 0 60px 20px rgba(255, 236, 224, 0.45);
+  opacity: 0.7;
+}
+
+.sakura-tree {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.55;
+}
+
+.sakura-sway {
+  transform-box: view-box;
+  transform-origin: 19% 100%;
+  animation: sakura-sway 9s ease-in-out infinite alternate;
+}
+
+@keyframes sakura-sway {
+  from {
+    transform: rotate(-0.6deg);
+  }
+  to {
+    transform: rotate(0.8deg);
+  }
+}
+
+[data-theme="sakura"] .bubble {
+  box-shadow: 0 2px 6px rgba(122, 52, 78, 0.16);
+}
+
+[data-theme="sakura"] .bubble p {
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+[data-theme="sakura"] .bubble time,
+[data-theme="sakura"] .deleted-text {
+  color: rgba(74, 35, 51, 0.6);
+}
+
+[data-theme="sakura"] .reply-quote {
+  background: rgba(196, 82, 122, 0.12);
+}
+
+[data-theme="sakura"] .reply-quote span {
+  color: rgba(74, 35, 51, 0.75);
+}
+
+[data-theme="sakura"] .bubble-row.highlight .bubble {
+  outline-color: rgba(196, 82, 122, 0.7);
+}
+
+[data-theme="sakura"] .composer-context.edit {
+  border-left-color: #b58be0;
+}
+
+[data-theme="sakura"] .composer-context.edit strong {
+  color: #9b6fcf;
+}
+
+[data-theme="sakura"] .unread-divider::before,
+[data-theme="sakura"] .unread-divider::after {
+  background: rgba(196, 82, 122, 0.35);
+}
+
+[data-theme="sakura"] .unread-divider span {
+  background: var(--wa-green);
+  color: #fff;
+}
+
+[data-theme="sakura"] .msg-link {
+  color: #a3335c;
+}
+
+[data-theme="cyberpunk"] .msg-link {
+  color: var(--cp-yellow, #f9f002);
+}
+
+[data-theme="onepiece"] .msg-link {
+  color: #1d5fa8;
+}
+
+/* ---------- Theme toggle ---------- */
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.theme-toggle svg {
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.theme-toggle:hover svg {
+  transform: rotate(35deg) scale(1.1);
+}
+
+[data-theme="sakura"] .theme-toggle {
+  color: var(--wa-green);
+}
+
+.auth-card {
+  position: relative;
+}
+
+.auth-card .theme-picker {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.theme-picker {
+  position: relative;
+}
+
+.theme-menu {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  z-index: 60;
+  min-width: 170px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--wa-header);
+  border: 1px solid var(--wa-border);
+  box-shadow: var(--wa-shadow);
+  display: flex;
+  flex-direction: column;
+  transform-origin: top right;
+  animation: menu-pop 0.16s ease-out both;
+}
+
+.theme-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--wa-text);
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.theme-menu button:hover,
+.theme-menu button.active {
+  background: var(--wa-active);
+}
+
+.theme-swatch {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.theme-swatch.dark {
+  background: #111b21;
+  color: #00a884;
+  border: 1px solid #2a3942;
+}
+
+.theme-swatch.sakura {
+  background: #ffc9db;
+  color: #e8678f;
+}
+
+.theme-swatch.cyberpunk {
+  background: #0d0221;
+  color: #f9f002;
+  border: 1px solid #ff2a6d;
+  box-shadow: 0 0 6px rgba(255, 42, 109, 0.7);
+}
+
+.theme-check {
+  margin-left: auto;
+  color: var(--wa-green);
+}
+
+/* ---------- Falling petals ---------- */
+
+.petals {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.petal {
+  position: absolute;
+  top: -24px;
+  left: var(--x);
+  width: var(--size);
+  height: calc(var(--size) * 0.8);
+  border-radius: 150% 0 150% 0;
+  background: linear-gradient(135deg, #ffd3e1 0%, #f7a1bc 100%);
+  opacity: 0.75;
+  animation:
+    petal-fall var(--dur) linear var(--delay) infinite,
+    petal-sway calc(var(--dur) / 3) ease-in-out var(--delay) infinite alternate;
+}
+
+@keyframes petal-fall {
+  from {
+    top: -24px;
+    rotate: 0deg;
+  }
+  to {
+    top: 105%;
+    rotate: 540deg;
+  }
+}
+
+@keyframes petal-sway {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: var(--drift) 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .petals {
+    display: none;
+  }
+
+  .sakura-sway {
+    animation: none;
+  }
+}
+
+/* ---------- Cyberpunk theme ---------- */
+
+:root[data-theme="cyberpunk"] {
+  --wa-bg: #07060f;
+  --wa-panel: #0d0b1e;
+  --wa-header: #150f2e;
+  --wa-hover: #1c1540;
+  --wa-active: #261a52;
+  --wa-border: #3a2470;
+  --wa-input: #120d29;
+  --wa-text: #e6f7ff;
+  --wa-muted: #8c86b8;
+  --wa-green: #05d9e8;
+  --wa-green-hover: #5ff6ff;
+  --wa-outgoing: #2a0b2a;
+  --wa-incoming: #0a1a2e;
+  --wa-danger: #ff2a6d;
+  --wa-shadow: 0 0 24px rgba(255, 42, 109, 0.25);
+  --cp-pink: #ff2a6d;
+  --cp-cyan: #05d9e8;
+  --cp-yellow: #f9f002;
+  --cp-green: #39ff14;
+}
+
+:root[data-theme="cyberpunk"] body {
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-weight: 600;
+  font-size: 16.5px;
+}
+
+:root[data-theme="cyberpunk"],
+:root[data-theme="cyberpunk"] body,
+:root[data-theme="cyberpunk"] #root {
+  background: var(--wa-bg);
+}
+
+[data-theme="cyberpunk"] .auth-brand h1,
+[data-theme="cyberpunk"] .chat-empty h2,
+[data-theme="cyberpunk"] .chat-peer strong,
+[data-theme="cyberpunk"] .user-chip strong,
+[data-theme="cyberpunk"] .section-label {
+  font-family: "Orbitron", "Rajdhani", sans-serif;
+  letter-spacing: 0.08em;
+}
+
+[data-theme="cyberpunk"] .auth-brand h1 {
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--cp-yellow);
+  animation: cp-glitch 3.5s infinite steps(1);
+}
+
+[data-theme="cyberpunk"] .chat-empty h2 {
+  font-size: 1.3rem;
+  text-transform: uppercase;
+  color: var(--cp-cyan);
+  text-shadow: 0 0 10px rgba(5, 217, 232, 0.7);
+}
+
+[data-theme="cyberpunk"] .chat-empty svg {
+  color: var(--cp-pink);
+  filter: drop-shadow(0 0 8px var(--cp-pink));
+}
+
+[data-theme="cyberpunk"] .chat-peer strong {
+  color: var(--cp-cyan);
+  text-shadow: 0 0 8px rgba(5, 217, 232, 0.6);
+}
+
+[data-theme="cyberpunk"] .user-chip strong {
+  font-size: 0.85rem;
+}
+
+[data-theme="cyberpunk"] .section-label {
+  color: var(--cp-pink);
+  font-size: 0.68rem;
+}
+
+@keyframes cp-glitch {
+  0%,
+  88%,
+  100% {
+    text-shadow:
+      0 0 8px rgba(249, 240, 2, 0.6),
+      2px 0 var(--cp-pink),
+      -2px 0 var(--cp-cyan);
+    transform: none;
+  }
+  90% {
+    text-shadow:
+      -4px 0 var(--cp-pink),
+      4px 0 var(--cp-cyan);
+    transform: translateX(2px) skewX(-8deg);
+  }
+  93% {
+    text-shadow:
+      4px 0 var(--cp-pink),
+      -4px 0 var(--cp-cyan);
+    transform: translateX(-2px) skewX(6deg);
+  }
+}
+
+/* Text sitting on the accent color */
+[data-theme="cyberpunk"] .brand-icon,
+[data-theme="cyberpunk"] .primary-btn,
+[data-theme="cyberpunk"] .avatar.green,
+[data-theme="cyberpunk"] .search-form button,
+[data-theme="cyberpunk"] .composer-send,
+[data-theme="cyberpunk"] .unread-badge,
+[data-theme="cyberpunk"] .add-btn,
+[data-theme="cyberpunk"] .request-btn.accept {
+  color: #07060f;
+}
+
+[data-theme="cyberpunk"] .primary-btn,
+[data-theme="cyberpunk"] .composer-send,
+[data-theme="cyberpunk"] .search-form button,
+[data-theme="cyberpunk"] .unread-badge {
+  box-shadow: 0 0 12px rgba(5, 217, 232, 0.55);
+}
+
+[data-theme="cyberpunk"] .primary-btn {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border-radius: 2px;
+}
+
+[data-theme="cyberpunk"] .auth-screen {
+  background:
+    radial-gradient(ellipse at top, rgba(255, 42, 109, 0.25) 0%, transparent 55%),
+    radial-gradient(ellipse at bottom, rgba(5, 217, 232, 0.18) 0%, transparent 55%),
+    var(--wa-bg);
+}
+
+[data-theme="cyberpunk"] .auth-card {
+  border: 1px solid var(--cp-pink);
+  border-radius: 4px;
+  box-shadow:
+    0 0 24px rgba(255, 42, 109, 0.35),
+    inset 0 0 24px rgba(255, 42, 109, 0.08);
+}
+
+[data-theme="cyberpunk"] .auth-form input,
+[data-theme="cyberpunk"] .search-form input,
+[data-theme="cyberpunk"] .composer input {
+  border: 1px solid var(--wa-border);
+  border-radius: 4px;
+}
+
+[data-theme="cyberpunk"] .auth-form input:focus,
+[data-theme="cyberpunk"] .search-form input:focus,
+[data-theme="cyberpunk"] .composer input:focus {
+  border-color: var(--cp-cyan);
+  box-shadow: 0 0 10px rgba(5, 217, 232, 0.45);
+}
+
+[data-theme="cyberpunk"] .error-banner {
+  background: rgba(255, 42, 109, 0.12);
+  color: var(--cp-pink);
+  border: 1px solid rgba(255, 42, 109, 0.5);
+}
+
+[data-theme="cyberpunk"] .avatar {
+  background: linear-gradient(135deg, var(--cp-pink), #8a2be2);
+  color: #fff;
+  border-radius: 0;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+
+[data-theme="cyberpunk"] .avatar.green {
+  background: linear-gradient(135deg, var(--cp-cyan), #2b6cff);
+}
+
+[data-theme="cyberpunk"] .online-dot {
+  background: var(--cp-green);
+  box-shadow: 0 0 6px var(--cp-green);
+}
+
+[data-theme="cyberpunk"] .online-label,
+[data-theme="cyberpunk"] .typing-label {
+  color: var(--cp-green) !important;
+  text-shadow: 0 0 6px rgba(57, 255, 20, 0.6);
+}
+
+[data-theme="cyberpunk"] .friend-row.active {
+  box-shadow: inset 3px 0 0 var(--cp-pink);
+}
+
+[data-theme="cyberpunk"] .request-btn.reject {
+  background: rgba(255, 42, 109, 0.15);
+  color: var(--cp-pink);
+}
+
+[data-theme="cyberpunk"] .chat-header,
+[data-theme="cyberpunk"] .sidebar-header {
+  border-bottom: 1px solid rgba(255, 42, 109, 0.45);
+}
+
+[data-theme="cyberpunk"] .chat-pane {
+  background: linear-gradient(180deg, #05040c 0%, #120a2a 45%, #2a0c3a 78%, #3d0f3f 100%);
+}
+
+.cyber-city {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.city-glow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 70%;
+  background:
+    radial-gradient(ellipse 60% 50% at 30% 100%, rgba(255, 42, 109, 0.35), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 80% 100%, rgba(5, 217, 232, 0.22), transparent 70%);
+}
+
+.cyber-city svg {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+.city-far {
+  height: 62%;
+  opacity: 0.55;
+  filter: blur(0.6px);
+}
+
+.city-near {
+  height: 42%;
+  opacity: 0.85;
+}
+
+.city-flicker {
+  animation: city-flicker 4s steps(1) infinite;
+}
+
+@keyframes city-flicker {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  47% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  53% {
+    opacity: 0.15;
+  }
+}
+
+.rain {
+  position: absolute;
+  inset: -20% -15%;
+  transform: rotate(12deg);
+}
+
+.rain span {
+  position: absolute;
+  top: 0;
+  left: var(--x);
+  width: 1px;
+  height: var(--len);
+  background: linear-gradient(to bottom, transparent, rgba(170, 225, 255, 0.75));
+  opacity: var(--o);
+  animation: rain-fall var(--dur) linear var(--delay) infinite;
+}
+
+@keyframes rain-fall {
+  from {
+    transform: translateY(-120px);
+  }
+  to {
+    transform: translateY(150vh);
+  }
+}
+
+[data-theme="cyberpunk"] .bubble {
+  border-radius: 3px;
+}
+
+[data-theme="cyberpunk"] .bubble.tail::before {
+  display: none;
+}
+
+[data-theme="cyberpunk"] .bubble.mine {
+  border: 1px solid var(--cp-pink);
+  border-top-right-radius: 14px;
+  box-shadow:
+    0 0 10px rgba(255, 42, 109, 0.35),
+    inset 0 0 12px rgba(255, 42, 109, 0.12);
+}
+
+[data-theme="cyberpunk"] .bubble.theirs {
+  border: 1px solid var(--cp-cyan);
+  border-top-left-radius: 14px;
+  box-shadow:
+    0 0 10px rgba(5, 217, 232, 0.3),
+    inset 0 0 12px rgba(5, 217, 232, 0.1);
+}
+
+[data-theme="cyberpunk"] .bubble p {
+  font-size: 1.02rem;
+}
+
+[data-theme="cyberpunk"] .bubble time {
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: rgba(230, 247, 255, 0.55);
+}
+
+[data-theme="cyberpunk"] .bubble.pop-in {
+  animation: cp-bubble-in 0.42s ease-out both;
+}
+
+@keyframes cp-bubble-in {
+  0% {
+    opacity: 0;
+    transform: translateX(var(--cp-in, 18px)) skewX(-12deg);
+    filter: hue-rotate(90deg) brightness(1.8);
+  }
+  40% {
+    opacity: 1;
+    transform: translateX(calc(var(--cp-in, 18px) * -0.2)) skewX(4deg);
+  }
+  60% {
+    transform: translateX(2px) skewX(0);
+    filter: hue-rotate(-40deg) brightness(1.3);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+[data-theme="cyberpunk"] .bubble.pop-in.theirs {
+  --cp-in: -18px;
+}
+
+[data-theme="cyberpunk"] .bubble-row.highlight .bubble {
+  outline-color: var(--cp-yellow);
+}
+
+[data-theme="cyberpunk"] .reply-quote {
+  background: rgba(5, 217, 232, 0.08);
+  border-radius: 2px;
+}
+
+[data-theme="cyberpunk"] .typing-bubble span {
+  background: var(--cp-cyan);
+  box-shadow: 0 0 6px var(--cp-cyan);
+}
+
+[data-theme="cyberpunk"] .msg-menu,
+[data-theme="cyberpunk"] .theme-menu {
+  border-color: var(--cp-pink);
+  border-radius: 4px;
+}
+
+[data-theme="cyberpunk"] .composer-wrap {
+  border-top: 1px solid rgba(5, 217, 232, 0.25);
+}
+
+[data-theme="cyberpunk"] .composer-context {
+  border-radius: 2px;
+}
+
+[data-theme="cyberpunk"] .composer-context.edit {
+  border-left-color: var(--cp-yellow);
+}
+
+[data-theme="cyberpunk"] .composer-context.edit strong {
+  color: var(--cp-yellow);
+}
+
+[data-theme="cyberpunk"] .unread-divider::before,
+[data-theme="cyberpunk"] .unread-divider::after {
+  background: rgba(249, 240, 2, 0.4);
+}
+
+[data-theme="cyberpunk"] .unread-divider span {
+  background: var(--cp-yellow);
+  color: #07060f;
+  border-radius: 2px;
+  font-family: "Orbitron", sans-serif;
+  letter-spacing: 0.06em;
+  box-shadow: 0 0 10px rgba(249, 240, 2, 0.5);
+}
+
+[data-theme="cyberpunk"] .theme-toggle {
+  color: var(--cp-yellow);
+}
+
+.scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.025) 0,
+    rgba(255, 255, 255, 0.025) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  animation: scanline-drift 8s linear infinite;
+}
+
+@keyframes scanline-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanlines,
+  .theme-menu,
+  [data-theme="cyberpunk"] .auth-brand h1,
+  [data-theme="cyberpunk"] .bubble.pop-in,
+  .city-flicker {
+    animation: none;
+  }
+
+  .rain {
+    display: none;
+  }
+}
+
+/* ---------- One Piece theme ---------- */
+
+:root[data-theme="onepiece"] {
+  --wa-bg: #0b2340;
+  --wa-panel: #0f2c4f;
+  --wa-header: #143761;
+  --wa-hover: #17406f;
+  --wa-active: #1d4b80;
+  --wa-border: #24578f;
+  --wa-input: #0c2645;
+  --wa-text: #f4ead2;
+  --wa-muted: #9fb3cc;
+  --wa-green: #f2b632;
+  --wa-green-hover: #ffc94d;
+  --wa-outgoing: #f6dc9a;
+  --wa-incoming: #fbf3dd;
+  --wa-danger: #e63b2e;
+  --wa-shadow: 0 8px 32px rgba(3, 14, 30, 0.5);
+  --op-ink: #2a1d0e;
+  --op-red: #e63b2e;
+}
+
+:root[data-theme="onepiece"] body {
+  font-family: "Nunito", "Segoe UI", sans-serif;
+  font-weight: 600;
+}
+
+:root[data-theme="onepiece"],
+:root[data-theme="onepiece"] body,
+:root[data-theme="onepiece"] #root {
+  background: var(--wa-bg);
+}
+
+[data-theme="onepiece"] .auth-brand h1,
+[data-theme="onepiece"] .chat-empty h2,
+[data-theme="onepiece"] .chat-peer strong,
+[data-theme="onepiece"] .section-label {
+  font-family: "Pirata One", "Georgia", serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+[data-theme="onepiece"] .auth-brand h1 {
+  font-size: 2.3rem;
+  color: var(--wa-green);
+  text-shadow: 2px 2px 0 var(--op-red);
+}
+
+[data-theme="onepiece"] .chat-peer strong {
+  font-size: 1.35rem;
+  color: var(--wa-green);
+}
+
+[data-theme="onepiece"] .chat-empty h2 {
+  font-size: 2rem;
+  color: #fff3d6;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="onepiece"] .chat-empty p {
+  color: #fff3d6;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="onepiece"] .chat-empty svg {
+  color: var(--wa-green);
+}
+
+[data-theme="onepiece"] .section-label {
+  color: var(--wa-green);
+  font-size: 0.95rem;
+  text-transform: none;
+}
+
+/* Text sitting on the accent color */
+[data-theme="onepiece"] .brand-icon,
+[data-theme="onepiece"] .primary-btn,
+[data-theme="onepiece"] .avatar.green,
+[data-theme="onepiece"] .search-form button,
+[data-theme="onepiece"] .composer-send,
+[data-theme="onepiece"] .unread-badge,
+[data-theme="onepiece"] .add-btn,
+[data-theme="onepiece"] .request-btn.accept {
+  color: #0b2340;
+}
+
+[data-theme="onepiece"] .avatar {
+  background: var(--op-red);
+  color: #fff3d6;
+  box-shadow: 0 0 0 2px var(--wa-green);
+}
+
+[data-theme="onepiece"] .avatar.green {
+  background: var(--wa-green);
+  box-shadow: 0 0 0 2px var(--op-red);
+}
+
+[data-theme="onepiece"] .auth-screen {
+  background: linear-gradient(180deg, #1b2a5a 0%, #6b3f7a 45%, #e0795a 75%, #f6b26b 100%);
+}
+
+[data-theme="onepiece"] .auth-card {
+  border: 2px solid var(--wa-green);
+}
+
+[data-theme="onepiece"] .auth-form input:focus,
+[data-theme="onepiece"] .search-form input:focus,
+[data-theme="onepiece"] .composer input:focus {
+  box-shadow: 0 0 0 2px rgba(242, 182, 50, 0.5);
+}
+
+[data-theme="onepiece"] .error-banner {
+  background: rgba(230, 59, 46, 0.15);
+  color: #ffb3a8;
+}
+
+[data-theme="onepiece"] .request-btn.reject {
+  background: rgba(230, 59, 46, 0.2);
+  color: #ffb3a8;
+}
+
+[data-theme="onepiece"] .friend-row.active {
+  box-shadow: inset 3px 0 0 var(--op-red);
+}
+
+[data-theme="onepiece"] .chat-header,
+[data-theme="onepiece"] .sidebar-header {
+  border-bottom: 2px solid var(--wa-green);
+}
+
+[data-theme="onepiece"] .bubble {
+  color: var(--op-ink);
+  box-shadow: 0 2px 6px rgba(3, 14, 30, 0.35);
+}
+
+[data-theme="onepiece"] .bubble.mine {
+  border: 1px solid rgba(160, 110, 30, 0.45);
+}
+
+[data-theme="onepiece"] .bubble.theirs {
+  border: 1px solid rgba(120, 90, 50, 0.3);
+}
+
+[data-theme="onepiece"] .bubble time,
+[data-theme="onepiece"] .deleted-text {
+  color: rgba(42, 29, 14, 0.6);
+}
+
+[data-theme="onepiece"] .reply-quote {
+  background: rgba(42, 29, 14, 0.08);
+  border-left-color: var(--op-red);
+}
+
+[data-theme="onepiece"] .reply-quote strong {
+  color: var(--op-red);
+}
+
+[data-theme="onepiece"] .reply-quote span {
+  color: rgba(42, 29, 14, 0.75);
+}
+
+[data-theme="onepiece"] .typing-bubble span {
+  background: #8a6a3a;
+}
+
+[data-theme="onepiece"] .bubble-more {
+  color: #fff3d6;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+[data-theme="onepiece"] .history-status {
+  color: #fff3d6;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="onepiece"] .bubble-row.highlight .bubble {
+  outline-color: var(--op-red);
+}
+
+[data-theme="onepiece"] .unread-divider::before,
+[data-theme="onepiece"] .unread-divider::after {
+  background: rgba(255, 243, 214, 0.5);
+}
+
+[data-theme="onepiece"] .unread-divider span {
+  background: var(--op-red);
+  color: #fff3d6;
+}
+
+[data-theme="onepiece"] .theme-toggle {
+  color: var(--wa-green);
+}
+
+[data-theme="onepiece"] .chat-pane {
+  background: linear-gradient(
+    180deg,
+    #1b2a5a 0%,
+    #4a3a78 30%,
+    #b0587a 50%,
+    #e98a5c 60%,
+    #f8c27a 64%
+  );
+}
+
+.theme-swatch.onepiece {
+  background: #143761;
+  color: #f2b632;
+  border: 1px solid #e63b2e;
+}
+
+/* ---------- Ocean scene ---------- */
+
+.ocean-scene {
+  --cycle: 90s;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Day/night cycle: afternoon → sunset → night → sunrise → afternoon */
+
+@keyframes day-only {
+  0%,
+  25% {
+    opacity: 1;
+  }
+  38%,
+  88% {
+    opacity: 0;
+  }
+  98%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes night-only {
+  0%,
+  30% {
+    opacity: 0;
+  }
+  45%,
+  80% {
+    opacity: 1;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes sea-dim {
+  0%,
+  25% {
+    filter: brightness(1);
+  }
+  42%,
+  82% {
+    filter: brightness(0.42) saturate(0.8);
+  }
+  96%,
+  100% {
+    filter: brightness(1);
+  }
+}
+
+.sky-day,
+.sky-night {
+  position: absolute;
+  inset: 0;
+}
+
+.sky-day {
+  background: linear-gradient(180deg, #3f7fc4 0%, #79aee0 40%, #f3cf9a 62%, #ffe2b0 66%);
+  animation: sky-day var(--cycle) linear infinite;
+}
+
+@keyframes sky-day {
+  0% {
+    opacity: 1;
+  }
+  22%,
+  90% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.sky-night {
+  background: linear-gradient(180deg, #03061a 0%, #0a1438 45%, #1c2a5a 64%);
+  animation: night-only var(--cycle) linear infinite;
+}
+
+.ocean-stars {
+  position: absolute;
+  inset: 0;
+  animation: night-only var(--cycle) linear infinite;
+}
+
+.ocean-stars span {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+  animation: twinkle 3s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.shooting-star {
+  position: absolute;
+  top: 10%;
+  left: 62%;
+  width: 110px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #fff, transparent);
+  opacity: 0;
+  animation: shooting-star var(--cycle) linear infinite;
+}
+
+@keyframes shooting-star {
+  0%,
+  57% {
+    opacity: 0;
+    transform: rotate(-24deg) translateX(0);
+  }
+  58% {
+    opacity: 1;
+    transform: rotate(-24deg) translateX(0);
+  }
+  60% {
+    opacity: 0;
+    transform: rotate(-24deg) translateX(-260px);
+  }
+  60.1%,
+  71% {
+    opacity: 0;
+    transform: translate(-280px, 40px) rotate(-18deg);
+  }
+  72% {
+    opacity: 1;
+    transform: translate(-280px, 40px) rotate(-18deg);
+  }
+  74% {
+    opacity: 0;
+    transform: translate(-280px, 40px) rotate(-18deg) translateX(-240px);
+  }
+  74.1%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.ocean-sun {
+  position: absolute;
+  right: 16%;
+  bottom: calc(36% + 10px);
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff1b8 0%, #ffcf6a 45%, #ff9a4a 100%);
+  box-shadow: 0 0 80px 30px rgba(255, 170, 90, 0.55);
+  animation: sun-path var(--cycle) linear infinite;
+}
+
+@keyframes sun-path {
+  0% {
+    transform: translate(-60px, -150px);
+  }
+  38%,
+  86% {
+    transform: translate(10px, 150px);
+  }
+  100% {
+    transform: translate(-60px, -150px);
+  }
+}
+
+.ocean-moon {
+  position: absolute;
+  left: 18%;
+  bottom: calc(36% + 10px);
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fffdf2 0%, #e9e4cf 60%, #cfc8ad 100%);
+  box-shadow:
+    inset -8px -6px 0 rgba(160, 150, 120, 0.25),
+    0 0 40px 12px rgba(220, 230, 255, 0.35);
+  animation: moon-path var(--cycle) ease-in-out infinite;
+}
+
+.ocean-moon::before,
+.ocean-moon::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(150, 140, 110, 0.25);
+}
+
+.ocean-moon::before {
+  width: 12px;
+  height: 12px;
+  top: 16px;
+  left: 30px;
+}
+
+.ocean-moon::after {
+  width: 8px;
+  height: 8px;
+  top: 34px;
+  left: 16px;
+}
+
+@keyframes moon-path {
+  0%,
+  38% {
+    transform: translate(0, 150px);
+  }
+  56% {
+    transform: translate(50px, -170px);
+  }
+  72% {
+    transform: translate(110px, -170px);
+  }
+  88%,
+  100% {
+    transform: translate(170px, 150px);
+  }
+}
+
+.moon-glint {
+  position: absolute;
+  top: 0;
+  left: calc(18% + 70px);
+  width: 46px;
+  height: 45%;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(220, 230, 255, 0.4) 0 2px,
+    transparent 2px 8px
+  );
+  mask-image: linear-gradient(to bottom, #000, transparent);
+  filter: blur(1.5px);
+  animation: night-only var(--cycle) linear infinite;
+}
+
+.ocean-cloud {
+  position: absolute;
+  left: 0;
+  border-radius: 999px;
+  background-color: rgba(255, 236, 222, 0.3);
+  filter: blur(6px);
+  animation:
+    drift-right var(--dur) linear var(--delay) infinite,
+    cloud-tint var(--cycle) linear infinite;
+}
+
+@keyframes cloud-tint {
+  0% {
+    background-color: rgba(255, 244, 236, 0.45);
+  }
+  25% {
+    background-color: rgba(255, 168, 150, 0.35);
+  }
+  42%,
+  82% {
+    background-color: rgba(110, 125, 170, 0.25);
+  }
+  92% {
+    background-color: rgba(255, 168, 150, 0.35);
+  }
+  100% {
+    background-color: rgba(255, 244, 236, 0.45);
+  }
+}
+
+.ocean-cloud::before {
+  content: "";
+  position: absolute;
+  left: 22%;
+  bottom: 40%;
+  width: 45%;
+  height: 110%;
+  border-radius: 50%;
+  background: inherit;
+}
+
+.gull-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  animation:
+    drift-right var(--dur) linear var(--delay) infinite,
+    day-only var(--cycle) linear infinite;
+}
+
+.gull {
+  display: block;
+  margin-left: -40px;
+  animation: gull-flap 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes gull-flap {
+  from {
+    transform: scaleY(1);
+  }
+  to {
+    transform: scaleY(0.45) translateY(2px);
+  }
+}
+
+@keyframes drift-right {
+  from {
+    transform: translateX(-15%);
+  }
+  to {
+    transform: translateX(110%);
+  }
+}
+
+.ocean-cloud {
+  margin-left: -240px;
+}
+
+.sea {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36%;
+}
+
+.wave-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  animation: sea-dim var(--cycle) linear infinite;
+}
+
+.wave-band.back {
+  top: 0;
+}
+
+.wave-band.mid {
+  top: 30%;
+}
+
+.wave-band.front {
+  top: 62%;
+}
+
+.wave-crest {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% - 6px);
+  width: 200%;
+  height: 40px;
+  will-change: transform;
+  animation:
+    wave-roll 18s linear infinite,
+    wave-swell 6s ease-in-out infinite alternate;
+}
+
+.wave-band.mid .wave-crest {
+  animation:
+    wave-roll 13s linear infinite reverse,
+    wave-swell 5s ease-in-out -2s infinite alternate;
+}
+
+.wave-band.front .wave-crest {
+  animation:
+    wave-roll 10s linear infinite,
+    wave-swell 4.2s ease-in-out -1s infinite alternate;
+}
+
+@keyframes wave-swell {
+  from {
+    translate: 0 1px;
+  }
+  to {
+    translate: 0 -4px;
+  }
+}
+
+@keyframes wave-roll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.sun-glint {
+  position: absolute;
+  top: 0;
+  right: calc(16% + 18px);
+  width: 60px;
+  height: 30%;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 210, 130, 0.45) 0 2px,
+    transparent 2px 7px
+  );
+  mask-image: linear-gradient(to bottom, #000, transparent);
+  filter: blur(1.5px);
+  animation:
+    glint 2.4s ease-in-out infinite alternate,
+    day-only var(--cycle) linear infinite;
+}
+
+@keyframes glint {
+  from {
+    transform: scaleX(0.8);
+  }
+  to {
+    transform: scaleX(1.15);
+  }
+}
+
+.ship-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  animation: drift-right var(--dur) linear var(--delay) infinite;
+}
+
+.ship-track.reverse {
+  animation-direction: reverse;
+}
+
+.ship-track.reverse .ship {
+  transform: scaleX(-1);
+}
+
+.ship {
+  position: relative;
+  margin-left: -120px;
+}
+
+.ship-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 80%;
+  animation:
+    ship-bob 3.2s ease-in-out infinite alternate,
+    sea-dim var(--cycle) linear infinite;
+}
+
+.ship-lantern {
+  position: absolute;
+  left: 8%;
+  top: 52%;
+  width: 12%;
+  aspect-ratio: 1;
+  max-width: 7px;
+  border-radius: 50%;
+  background: #ffd36b;
+  box-shadow: 0 0 8px 3px rgba(255, 196, 90, 0.8);
+  animation: night-only var(--cycle) linear infinite;
+}
+
+.ship-track.reverse .ship-svg {
+  animation-delay: -1.4s;
+}
+
+@keyframes ship-bob {
+  from {
+    transform: translateY(0) rotate(-3deg);
+  }
+  to {
+    transform: translateY(3px) rotate(3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ocean-cloud,
+  .gull-track,
+  .gull,
+  .wave-crest,
+  .wave-band.mid .wave-crest,
+  .wave-band.front .wave-crest,
+  .sun-glint,
+  .ship-track,
+  .ship-svg,
+  .ocean-stars span,
+  .ocean-sun,
+  .ocean-moon,
+  .sky-day,
+  .sky-night,
+  .ocean-stars,
+  .shooting-star,
+  .moon-glint,
+  .ship-lantern,
+  .wave-band {
+    animation: none;
+  }
+
+  .sky-day,
+  .sky-night,
+  .ocean-stars,
+  .ocean-moon,
+  .moon-glint,
+  .ship-lantern {
+    opacity: 0;
+  }
+}

@@ -316,6 +316,14 @@
   background: var(--wa-green-hover);
 }
 
+.composer-send {
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+
+.composer-send:active:not(:disabled) {
+  transform: scale(0.88);
+}
+
 .composer-send:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -428,6 +436,8 @@
 
 .chat-pane {
   flex: 1;
+  position: relative;
+  isolation: isolate;
   background:
     linear-gradient(rgba(11, 20, 26, 0.88), rgba(11, 20, 26, 0.88)),
     radial-gradient(circle at 20% 20%, #1a3a34 0, transparent 40%),
@@ -440,15 +450,63 @@
   padding: 16px 8%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
+  overflow-x: hidden;
 }
 
 .bubble {
+  position: relative;
   max-width: min(68%, 560px);
   padding: 8px 10px 6px;
   border-radius: 10px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
   word-wrap: break-word;
+}
+
+.bubble.tail::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 13px;
+}
+
+.bubble.tail.mine::before {
+  right: -8px;
+  background: var(--wa-outgoing);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.bubble.tail.theirs::before {
+  left: -8px;
+  background: var(--wa-incoming);
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+.bubble.pop-in {
+  animation: bubble-pop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.bubble.pop-in.mine {
+  transform-origin: bottom right;
+}
+
+.bubble.pop-in.theirs {
+  transform-origin: bottom left;
+}
+
+@keyframes bubble-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.6);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .bubble p {
@@ -468,13 +526,19 @@
 .bubble.mine {
   align-self: flex-end;
   background: var(--wa-outgoing);
-  border-top-right-radius: 3px;
 }
 
 .bubble.theirs {
   align-self: flex-start;
   background: var(--wa-incoming);
-  border-top-left-radius: 3px;
+}
+
+.bubble.tail.mine {
+  border-top-right-radius: 0;
+}
+
+.bubble.tail.theirs {
+  border-top-left-radius: 0;
 }
 
 .typing-label {
@@ -492,10 +556,16 @@
 .bubble-row.mine {
   align-self: flex-end;
   flex-direction: row-reverse;
+  margin-right: 8px;
 }
 
 .bubble-row.theirs {
   align-self: flex-start;
+  margin-left: 8px;
+}
+
+.bubble-row.group-start {
+  margin-top: 8px;
 }
 
 .bubble-row .bubble {
@@ -590,14 +660,28 @@
   box-shadow: var(--wa-shadow);
   display: flex;
   flex-direction: column;
+  animation: menu-pop 0.16s ease-out both;
 }
 
 .msg-menu.mine {
   right: 32px;
+  transform-origin: top right;
 }
 
 .msg-menu.theirs {
   left: 32px;
+  transform-origin: top left;
+}
+
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .msg-menu button {
@@ -620,6 +704,44 @@
 
 .msg-menu button.danger {
   color: var(--wa-danger);
+}
+
+.msg-link {
+  color: #53bdeb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+
+.msg-link:hover {
+  text-decoration-thickness: 2px;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 88px;
+  z-index: 70;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--wa-header);
+  color: var(--wa-text);
+  border: 1px solid var(--wa-border);
+  box-shadow: var(--wa-shadow);
+  font-size: 0.85rem;
+  transform: translateX(-50%);
+  animation: toast-in 0.2s ease-out both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 .typing-bubble {
@@ -800,5 +922,12 @@
 
   .bubble-more {
     opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble.pop-in,
+  .msg-menu {
+    animation: none;
   }
 }
