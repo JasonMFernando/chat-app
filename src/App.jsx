@@ -31,6 +31,7 @@ import {
   Flower2,
   Link,
   LogOut,
+  ListMusic,
   MessageCircle,
   Moon,
   MoreVertical,
@@ -50,6 +51,7 @@ import "./themes.css";
 import CyberCity from "./CyberCity.jsx";
 import SakuraTree from "./SakuraTree.jsx";
 import OceanScene from "./OceanScene.jsx";
+import MusicRoom from "./MusicRoom.jsx";
 
 const THEME_KEY = "chatter-theme";
 
@@ -324,6 +326,8 @@ export default function App() {
   const [outgoingRequests, setOutgoingRequests] = useState([]);
 
   const [selectedFriend, setSelectedFriend] = useState(null);
+  const [musicPanelOpen, setMusicPanelOpen] = useState(false);
+  const [musicRoomActive, setMusicRoomActive] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [messages, setMessages] = useState([]);
   const [historyIds, setHistoryIds] = useState(() => new Set());
@@ -374,6 +378,8 @@ export default function App() {
       if (!nextUser) {
         setProfile(null);
         setSelectedFriend(null);
+        setMusicPanelOpen(false);
+        setMusicRoomActive(false);
         setMobileShowChat(false);
         setMessages([]);
         setIncomingRequests([]);
@@ -895,6 +901,8 @@ export default function App() {
         : null,
     );
     setSelectedFriend(friend);
+    setMusicPanelOpen(false);
+    setMusicRoomActive(false);
     setMobileShowChat(true);
     setDraft("");
     clearComposerExtras();
@@ -1262,7 +1270,28 @@ export default function App() {
                   </span>
                 </div>
               </div>
+              <div className="header-actions">
+                <button
+                  className={`icon-btn music-toggle${musicRoomActive ? " live" : ""}${musicPanelOpen ? " active" : ""}`}
+                  type="button"
+                  title={musicRoomActive ? "Music room live" : "Open music room"}
+                  onClick={() => setMusicPanelOpen((value) => !value)}
+                >
+                  <ListMusic size={18} />
+                  <span className="sr-only">Music room</span>
+                </button>
+              </div>
             </header>
+
+            <MusicRoom
+              chatId={getChatId(user.uid, selectedFriendLive.uid)}
+              user={user}
+              friendUid={selectedFriendLive.uid}
+              open={musicPanelOpen}
+              onClose={() => setMusicPanelOpen(false)}
+              onOpen={() => setMusicPanelOpen(true)}
+              onActiveChange={setMusicRoomActive}
+            />
 
             <div
               className="messages"
