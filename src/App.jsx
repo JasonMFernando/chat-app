@@ -26,6 +26,7 @@ import {
 import {
   ArrowLeft,
   Check,
+  ChevronDown,
   Copy,
   ExternalLink,
   Flower2,
@@ -54,6 +55,7 @@ import OceanScene from "./OceanScene.jsx";
 import MusicRoom from "./MusicRoom.jsx";
 
 const THEME_KEY = "chatter-theme";
+const NEAR_BOTTOM_PX = 120;
 
 const PETALS = Array.from({ length: 14 }, (_, i) => ({
   x: `${(i * 37 + 11) % 100}%`,
@@ -146,6 +148,11 @@ function ThemePicker({ theme, onChange }) {
 
 function getChatId(a, b) {
   return [a, b].sort().join("_");
+}
+
+function isListNearBottom(list) {
+  if (!list) return true;
+  return list.scrollHeight - list.scrollTop - list.clientHeight < NEAR_BOTTOM_PX;
 }
 
 function normalizeUsername(value) {
@@ -328,6 +335,8 @@ export default function App() {
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [musicPanelOpen, setMusicPanelOpen] = useState(false);
   const [musicRoomActive, setMusicRoomActive] = useState(false);
+  const [showJumpDown, setShowJumpDown] = useState(false);
+  const [jumpNewCount, setJumpNewCount] = useState(0);
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [messages, setMessages] = useState([]);
   const [historyIds, setHistoryIds] = useState(() => new Set());
@@ -339,6 +348,7 @@ export default function App() {
   const [replyingTo, setReplyingTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [menuMessageId, setMenuMessageId] = useState(null);
+  const [menuFlipUp, setMenuFlipUp] = useState(false);
   const [toast, setToast] = useState("");
   const toastTimeoutRef = useRef(null);
   const [presenceByUid, setPresenceByUid] = useState({});
@@ -356,6 +366,9 @@ export default function App() {
   const pagedOlderRef = useRef(false);
   const loadingOlderRef = useRef(false);
   const scrollRestoreRef = useRef(null);
+  const nearBottomRef = useRef(true);
+  const forceScrollRef = useRef(false);
+  const lastSeenBottomIdRef = useRef(null);
   const friends = profile?.friends || [];
   const friendIdsKey = friends.map((friend) => friend.uid).sort().join(",");
 
@@ -380,6 +393,11 @@ export default function App() {
         setSelectedFriend(null);
         setMusicPanelOpen(false);
         setMusicRoomActive(false);
+        setShowJumpDown(false);
+        setJumpNewCount(0);
+        nearBottomRef.current = true;
+        forceScrollRef.current = false;
+        lastSeenBottomIdRef.current = null;
         setMobileShowChat(false);
         setMessages([]);
         setIncomingRequests([]);
@@ -550,7 +568,10 @@ export default function App() {
 
   useEffect(() => {
     if (!menuMessageId) return undefined;
-    const close = () => setMenuMessageId(null);
+    const close = () => {
+      setMenuMessageId(null);
+      setMenuFlipUp(false);
+    };
     window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
   }, [menuMessageId]);
@@ -576,29 +597,66 @@ export default function App() {
       const { height, top } = scrollRestoreRef.current;
       list.scrollTop = top + (list.scrollHeight - height);
       scrollRestoreRef.current = null;
+      nearBottomRef.current = isListNearBottom(list);
+      setShowJumpDown(!nearBottomRef.current);
       return undefined;
     }
 
     const friendId = selectedFriend?.uid;
+    const isNewFriend = alignedForFriend.current !== friendId;
     const pinToUnreadBanner =
+      isNewFriend &&
       unreadDividerRef.current &&
-      unreadDivider?.friendUid === friendId &&
-      alignedForFriend.current !== friendId;
+      unreadDivider?.friendUid === friendId;
 
-    const scrollToLatest = () => {
-      if (pinToUnreadBanner && unreadDividerRef.current) {
-        list.scrollTop = Math.max(0, unreadDividerRef.current.offsetTop - 8);
-        alignedForFriend.current = friendId;
-        return;
-      }
+    const stickToBottom = () => {
       list.scrollTop = list.scrollHeight;
-      alignedForFriend.current = friendId;
+      nearBottomRef.current = true;
+      setShowJumpDown(false);
+      setJumpNewCount(0);
+      lastSeenBottomIdRef.current = messages.at(-1)?.id ?? null;
     };
 
-    scrollToLatest();
-    const frame = requestAnimationFrame(scrollToLatest);
-    return () => cancelAnimationFrame(frame);
-  }, [messages, unreadDivider, selectedFriend, friendTyping]);
+    if (isNewFriend) {
+      alignedForFriend.current = friendId;
+      setJumpNewCount(0);
+      const apply = () => {
+        if (pinToUnreadBanner && unreadDividerRef.current) {
+          list.scrollTop = Math.max(0, unreadDividerRef.current.offsetTop - 8);
+          nearBottomRef.current = isListNearBottom(list);
+          setShowJumpDown(!nearBottomRef.current);
+          lastSeenBottomIdRef.current = nearBottomRef.current
+            ? messages.at(-1)?.id ?? null
+            : lastSeenBottomIdRef.current;
+          return;
+        }
+        stickToBottom();
+      };
+      apply();
+      const frame = requestAnimationFrame(apply);
+      return () => cancelAnimationFrame(frame);
+    }
+
+    if (forceScrollRef.current || nearBottomRef.current) {
+      forceScrollRef.current = false;
+      stickToBottom();
+      const frame = requestAnimationFrame(stickToBottom);
+      return () => cancelAnimationFrame(frame);
+    }
+
+    const lastSeen = lastSeenBottomIdRef.current;
+    if (lastSeen) {
+      const idx = messages.findIndex((message) => message.id === lastSeen);
+      if (idx >= 0) {
+        const newerIncoming = messages
+          .slice(idx + 1)
+          .filter((message) => message.senderId !== user?.uid);
+        setJumpNewCount(newerIncoming.length);
+      }
+    }
+    setShowJumpDown(true);
+    return undefined;
+  }, [messages, unreadDivider, selectedFriend, friendTyping, user?.uid]);
 
   const latestIncomingId = messages
     .filter((message) => message.senderId === selectedFriend?.uid)
@@ -903,6 +961,11 @@ export default function App() {
     setSelectedFriend(friend);
     setMusicPanelOpen(false);
     setMusicRoomActive(false);
+    setShowJumpDown(false);
+    setJumpNewCount(0);
+    nearBottomRef.current = true;
+    forceScrollRef.current = false;
+    lastSeenBottomIdRef.current = null;
     setMobileShowChat(true);
     setDraft("");
     clearComposerExtras();
@@ -959,9 +1022,37 @@ export default function App() {
     }
   }
 
+  function scrollMessagesToBottom(smooth = false) {
+    const list = messagesListRef.current;
+    if (!list) return;
+    if (smooth) {
+      list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
+    } else {
+      list.scrollTop = list.scrollHeight;
+    }
+    nearBottomRef.current = true;
+    setShowJumpDown(false);
+    setJumpNewCount(0);
+    lastSeenBottomIdRef.current = messages.at(-1)?.id ?? null;
+  }
+
   function onMessagesScroll(event) {
-    if (event.currentTarget.scrollTop < 80) {
+    const list = event.currentTarget;
+    if (list.scrollTop < 80) {
       loadOlderMessages();
+    }
+
+    const near = isListNearBottom(list);
+    nearBottomRef.current = near;
+    if (near) {
+      setShowJumpDown(false);
+      setJumpNewCount(0);
+      lastSeenBottomIdRef.current = messages.at(-1)?.id ?? null;
+    } else {
+      if (!lastSeenBottomIdRef.current && messages.length > 0) {
+        lastSeenBottomIdRef.current = messages.at(-1).id;
+      }
+      setShowJumpDown(true);
     }
   }
 
@@ -975,6 +1066,10 @@ export default function App() {
 
     const text = draft.trim();
     if (!text) return;
+
+    if (!editingMessage) {
+      forceScrollRef.current = true;
+    }
 
     const wasEditing = editingMessage;
     const wasReply = replyingTo;
@@ -1293,6 +1388,7 @@ export default function App() {
               onActiveChange={setMusicRoomActive}
             />
 
+            <div className="messages-wrap">
             <div
               className="messages"
               ref={messagesListRef}
@@ -1343,7 +1439,18 @@ export default function App() {
                         className={`bubble ${mine ? "mine" : "theirs"}${groupStart ? " tail" : ""}${fresh ? " pop-in" : ""}${message.deleted ? " deleted" : ""}`}
                         onContextMenu={(event) => {
                           event.preventDefault();
-                          if (!message.deleted) setMenuMessageId(message.id);
+                          if (message.deleted) return;
+                          const row = event.currentTarget.closest(".bubble-row");
+                          const list = messagesListRef.current;
+                          if (row && list) {
+                            const spaceBelow =
+                              list.getBoundingClientRect().bottom -
+                              row.getBoundingClientRect().top;
+                            setMenuFlipUp(spaceBelow < 240);
+                          } else {
+                            setMenuFlipUp(false);
+                          }
+                          setMenuMessageId(message.id);
                         }}
                       >
                         {message.deleted ? (
@@ -1383,9 +1490,22 @@ export default function App() {
                           title="Message actions"
                           onClick={(event) => {
                             event.stopPropagation();
-                            setMenuMessageId((current) =>
-                              current === message.id ? null : message.id,
-                            );
+                            if (menuMessageId === message.id) {
+                              setMenuMessageId(null);
+                              setMenuFlipUp(false);
+                              return;
+                            }
+                            const row = event.currentTarget.closest(".bubble-row");
+                            const list = messagesListRef.current;
+                            if (row && list) {
+                              const spaceBelow =
+                                list.getBoundingClientRect().bottom -
+                                row.getBoundingClientRect().top;
+                              setMenuFlipUp(spaceBelow < 240);
+                            } else {
+                              setMenuFlipUp(false);
+                            }
+                            setMenuMessageId(message.id);
                           }}
                         >
                           <MoreVertical size={16} />
@@ -1393,7 +1513,7 @@ export default function App() {
                       )}
                       {menuMessageId === message.id && (
                         <div
-                          className={`msg-menu ${mine ? "mine" : "theirs"}`}
+                          className={`msg-menu ${mine ? "mine" : "theirs"}${menuFlipUp ? " up" : ""}`}
                           onClick={(event) => event.stopPropagation()}
                         >
                           <button type="button" onClick={() => startReply(message)}>
@@ -1450,6 +1570,27 @@ export default function App() {
                   </article>
                 </div>
               )}
+            </div>
+
+            {showJumpDown && (
+              <button
+                type="button"
+                className="jump-down-btn"
+                onClick={() => scrollMessagesToBottom(true)}
+                title={
+                  jumpNewCount > 0
+                    ? `${jumpNewCount} new message${jumpNewCount === 1 ? "" : "s"}`
+                    : "Scroll to bottom"
+                }
+              >
+                {jumpNewCount > 0 && (
+                  <span className="jump-down-badge">
+                    {jumpNewCount > 99 ? "99+" : jumpNewCount}
+                  </span>
+                )}
+                <ChevronDown size={20} />
+              </button>
+            )}
             </div>
 
             <div className="composer-wrap">

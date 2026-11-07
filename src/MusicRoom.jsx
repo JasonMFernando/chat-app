@@ -46,6 +46,13 @@ function trackPayload(track) {
   };
 }
 
+function formatTime(sec) {
+  const total = Math.max(0, Math.floor(Number(sec) || 0));
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+
 export default function MusicRoom({
   chatId,
   user,
@@ -64,6 +71,10 @@ export default function MusicRoom({
   const [roomError, setRoomError] = useState("");
   const [audioReady, setAudioReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [optimisticPlaying, setOptimisticPlaying] = useState(null);
+  const [progressSec, setProgressSec] = useState(0);
+  const [durationSec, setDurationSec] = useState(0);
+  const [scrubSec, setScrubSec] = useState(null);
 
   const playerRef = useRef(null);
   const playerReadyRef = useRef(false);
@@ -74,6 +85,7 @@ export default function MusicRoom({
   const queueRef = useRef([]);
   const roomRef = useRef(null);
   const hostRef = useRef(null);
+  const scrubbingRef = useRef(false);
 
   useEffect(() => {
     queueRef.current = queue;
@@ -81,11 +93,27 @@ export default function MusicRoom({
 
   useEffect(() => {
     roomRef.current = room;
-  }, [room]);
+    if (room && optimisticPlaying !== null && room.isPlaying === optimisticPlaying) {
+      setOptimisticPlaying(null);
+    }
+  }, [room, optimisticPlaying]);
 
   useEffect(() => {
     onActiveChange?.(Boolean(room?.active));
   }, [room?.active, onActiveChange]);
+
+  useEffect(() => {
+    setAudioReady(false);
+    setOptimisticPlaying(null);
+    setProgressSec(0);
+    setDurationSec(0);
+    setScrubSec(null);
+    scrubbingRef.current = false;
+    setResults([]);
+    setSearchTerm("");
+    setSearchError("");
+    setRoomError("");
+  }, [chatId]);
 
   useEffect(() => {
     if (!chatId || !user?.uid || !friendUid) return undefined;
@@ -260,10 +288,19 @@ export default function MusicRoom({
       return;
     }
 
-    const afterLoad = () => {
+    const syncPlayback = () => {
       try {
-        player.seekTo(target, true);
         if (nextRoom.isPlaying) {
+          let currentTime = target;
+          try {
+            const live = player.getCurrentTime?.();
+            if (typeof live === "number" && !Number.isNaN(live)) currentTime = live;
+          } catch {
+            /* ignore */
+          }
+          if (Math.abs(currentTime - target) > 1.5) {
+            player.seekTo(target, true);
+          }
           player.unMute?.();
           player.setVolume?.(100);
           player.playVideo();
@@ -279,14 +316,14 @@ export default function MusicRoom({
       loadedVideoRef.current = videoId;
       try {
         player.loadVideoById({ videoId, startSeconds: target });
-        window.setTimeout(afterLoad, 250);
+        window.setTimeout(syncPlayback, 250);
       } catch {
         /* ignore */
       }
       return;
     }
 
-    afterLoad();
+    syncPlayback();
   }
 
   useEffect(() => {
@@ -358,23 +395,49 @@ export default function MusicRoom({
   async function handlePlayPause() {
     if (!room?.current?.videoId || busy) return;
     setBusy(true);
+    const player = playerRef.current;
+    const currentlyPlaying = optimisticPlaying ?? Boolean(room.isPlaying);
+    const nextPlaying = !currentlyPlaying;
+    let positionSec = expectedPosition({
+      ...room,
+      isPlaying: currentlyPlaying,
+    });
     try {
-      const player = playerRef.current;
-      let positionSec = expectedPosition(room);
-      try {
-        const current = player?.getCurrentTime?.();
-        if (typeof current === "number" && !Number.isNaN(current)) {
-          positionSec = current;
-        }
-      } catch {
-        /* ignore */
+      const live = player?.getCurrentTime?.();
+      if (typeof live === "number" && !Number.isNaN(live)) {
+        positionSec = live;
       }
+    } catch {
+      /* ignore */
+    }
+
+    setOptimisticPlaying(nextPlaying);
+    // Apply locally immediately — own Firestore writes are suppressed from re-applying
+    try {
+      if (nextPlaying) {
+        player?.unMute?.();
+        player?.playVideo?.();
+      } else {
+        player?.pauseVideo?.();
+      }
+    } catch {
+      /* ignore */
+    }
+
+    try {
       await writePlayback({
-        isPlaying: !room.isPlaying,
+        isPlaying: nextPlaying,
         positionSec,
       });
     } catch (error) {
+      setOptimisticPlaying(currentlyPlaying);
       setRoomError(error.message || "Playback update failed");
+      try {
+        if (nextPlaying) player?.pauseVideo?.();
+        else player?.playVideo?.();
+      } catch {
+        /* ignore */
+      }
     } finally {
       setBusy(false);
     }
@@ -391,6 +454,89 @@ export default function MusicRoom({
       setBusy(false);
     }
   }
+
+  function beginScrub(value) {
+    scrubbingRef.current = true;
+    setScrubSec(value);
+  }
+
+  function updateScrub(value) {
+    scrubbingRef.current = true;
+    setScrubSec(value);
+    try {
+      playerRef.current?.seekTo(value, true);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function commitSeek(rawValue) {
+    if (!room?.current?.videoId) {
+      scrubbingRef.current = false;
+      setScrubSec(null);
+      return;
+    }
+    const max = durationSec > 0 ? durationSec : Number(rawValue) || 0;
+    const nextSec = Math.max(0, Math.min(Number(rawValue) || 0, max));
+    const keepPlaying = optimisticPlaying ?? Boolean(room.isPlaying);
+
+    scrubbingRef.current = false;
+    setScrubSec(null);
+    setProgressSec(nextSec);
+
+    try {
+      playerRef.current?.seekTo(nextSec, true);
+      if (keepPlaying) {
+        playerRef.current?.playVideo?.();
+      } else {
+        playerRef.current?.pauseVideo?.();
+      }
+    } catch {
+      /* ignore */
+    }
+
+    try {
+      await writePlayback({
+        isPlaying: keepPlaying,
+        positionSec: nextSec,
+      });
+    } catch (error) {
+      setRoomError(error.message || "Seek failed");
+    }
+  }
+
+  useEffect(() => {
+    if (!audioReady || !room?.current?.videoId) {
+      setProgressSec(0);
+      setDurationSec(0);
+      return undefined;
+    }
+
+    const tick = () => {
+      if (scrubbingRef.current) return;
+      const player = playerRef.current;
+      try {
+        const dur = player?.getDuration?.();
+        if (typeof dur === "number" && !Number.isNaN(dur) && dur > 0) {
+          setDurationSec(dur);
+        }
+        const live = player?.getCurrentTime?.();
+        if (typeof live === "number" && !Number.isNaN(live)) {
+          setProgressSec(live);
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
+      if (roomRef.current) {
+        setProgressSec(expectedPosition(roomRef.current));
+      }
+    };
+
+    tick();
+    const id = window.setInterval(tick, 400);
+    return () => window.clearInterval(id);
+  }, [audioReady, room?.current?.videoId, room?.version, room?.isPlaying]);
 
   async function handleSearch(event) {
     event.preventDefault();
@@ -494,6 +640,7 @@ export default function MusicRoom({
         updatedBy: user.uid,
       });
       setAudioReady(false);
+      setOptimisticPlaying(null);
       onClose?.();
     } catch (error) {
       setRoomError(error.message || "Could not leave room");
@@ -501,7 +648,36 @@ export default function MusicRoom({
   }
 
   const current = room?.current;
-  const showMiniBar = !open && audioReady && room?.active && current?.videoId;
+  const isPlaying = optimisticPlaying ?? Boolean(room?.isPlaying);
+  const showDock = open || Boolean(room?.active);
+  const seekValue = scrubSec ?? progressSec;
+  const seekMax = Math.max(durationSec || 0, seekValue, 1);
+  const canSeek = Boolean(audioReady && current?.videoId);
+
+  const seekControls = (
+    <div className="music-seek">
+      <span className="music-seek-time">{formatTime(seekValue)}</span>
+      <input
+        className="music-seek-range"
+        type="range"
+        min={0}
+        max={seekMax}
+        step={0.25}
+        value={Math.min(seekValue, seekMax)}
+        disabled={!canSeek}
+        aria-label="Seek"
+        onPointerDown={(event) => beginScrub(Number(event.currentTarget.value))}
+        onChange={(event) => updateScrub(Number(event.target.value))}
+        onPointerUp={(event) => commitSeek(Number(event.currentTarget.value))}
+        onKeyUp={(event) => {
+          if (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "Home" || event.key === "End") {
+            commitSeek(Number(event.currentTarget.value));
+          }
+        }}
+      />
+      <span className="music-seek-time">{formatTime(durationSec)}</span>
+    </div>
+  );
 
   return (
     <>
@@ -511,33 +687,113 @@ export default function MusicRoom({
         </div>
       )}
 
-      {showMiniBar && (
-        <button
-          type="button"
-          className="music-mini-bar"
-          onClick={() => onOpen?.()}
-          title="Open music room"
-        >
-          <span className="music-mini-art">
-            {current.thumbnail ? <img src={current.thumbnail} alt="" /> : <ListMusic size={16} />}
-          </span>
-          <span className="music-mini-meta">
-            <strong>{current.title}</strong>
-            <span>{room.isPlaying ? "Playing together" : "Paused"}</span>
-          </span>
-          <ListMusic size={16} />
-        </button>
+      {showDock && (
+        <div className="music-dock">
+          <div className="music-strip">
+            <button
+              type="button"
+              className="music-strip-main"
+              onClick={() => (open ? onClose?.() : onOpen?.())}
+              title={open ? "Hide panel" : "Show queue & search"}
+            >
+              <span className="music-strip-art" aria-hidden="true">
+                {current?.thumbnail ? (
+                  <img src={current.thumbnail} alt="" />
+                ) : (
+                  <ListMusic size={16} />
+                )}
+              </span>
+              <span className="music-strip-meta">
+                <strong>{current?.title || "Music room"}</strong>
+                <span>
+                  {!audioReady
+                    ? "Tap Start to listen"
+                    : current?.videoId
+                      ? isPlaying
+                        ? "Playing together"
+                        : "Paused"
+                      : "Add a song to start"}
+                </span>
+              </span>
+            </button>
+
+            <div className="music-strip-actions">
+              {!audioReady ? (
+                <button
+                  className="primary-btn music-start-btn"
+                  type="button"
+                  onClick={async () => {
+                    setAudioReady(true);
+                    onOpen?.();
+                    if (room?.current?.videoId && !room.isPlaying) {
+                      try {
+                        setOptimisticPlaying(true);
+                        await writePlayback({
+                          isPlaying: true,
+                          positionSec: expectedPosition(room),
+                        });
+                      } catch {
+                        setOptimisticPlaying(null);
+                      }
+                    }
+                  }}
+                >
+                  <Volume2 size={14} />
+                  Start
+                </button>
+              ) : (
+                <>
+                  <button
+                    className="icon-btn music-ctrl"
+                    type="button"
+                    disabled={!current?.videoId || busy}
+                    onClick={handlePlayPause}
+                    title={isPlaying ? "Pause" : "Play"}
+                  >
+                    {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+                  </button>
+                  <button
+                    className="icon-btn music-ctrl"
+                    type="button"
+                    disabled={busy || (!current?.videoId && queue.length === 0)}
+                    onClick={handleSkip}
+                    title="Skip"
+                  >
+                    <SkipForward size={18} />
+                  </button>
+                </>
+              )}
+              <button
+                className="icon-btn"
+                type="button"
+                onClick={() => (open ? onClose?.() : onOpen?.())}
+                title={open ? "Close panel" : "Open panel"}
+              >
+                {open ? <X size={18} /> : <ListMusic size={18} />}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {open && (
-        <div className="music-room" role="dialog" aria-label="Music room">
-          <div className="music-room-panel">
-            <header className="music-room-header">
+        <div
+          className="music-side-overlay"
+          onClick={() => onClose?.()}
+          role="presentation"
+        >
+          <aside
+            className="music-side-panel"
+            role="dialog"
+            aria-label="Music room"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="music-side-header">
               <div className="music-room-title">
                 <ListMusic size={18} />
                 <strong>Music room</strong>
               </div>
-              <div className="music-room-header-actions">
+              <div className="music-side-header-actions">
                 <button className="text-btn" type="button" onClick={leaveRoom}>
                   Leave
                 </button>
@@ -554,63 +810,71 @@ export default function MusicRoom({
 
             {roomError && <p className="error-banner music-room-error">{roomError}</p>}
 
-            {!audioReady ? (
-              <div className="music-audio-gate">
-                <Volume2 size={28} />
-                <p>Browsers block autoplay. Tap once to unlock synced audio.</p>
-                <button
-                  className="primary-btn"
-                  type="button"
-                  onClick={async () => {
-                    setAudioReady(true);
-                    if (room?.current?.videoId && !room.isPlaying) {
-                      try {
-                        await writePlayback({
-                          isPlaying: true,
-                          positionSec: expectedPosition(room),
-                        });
-                      } catch {
-                        /* player sync will still load the track */
-                      }
-                    }
-                  }}
-                >
-                  Start listening
-                </button>
+            <div className="music-now-playing">
+              <div className="music-art" aria-hidden="true">
+                {current?.thumbnail ? (
+                  <img src={current.thumbnail} alt="" />
+                ) : (
+                  <ListMusic size={28} />
+                )}
               </div>
-            ) : (
-              <div className="music-now-playing">
-                <div className="music-art" aria-hidden="true">
-                  {current?.thumbnail ? (
-                    <img src={current.thumbnail} alt="" />
-                  ) : (
-                    <ListMusic size={28} />
-                  )}
-                </div>
-                <div className="music-now-meta">
-                  <strong>{current?.title || "Nothing playing"}</strong>
-                  <span>{current?.channelTitle || "Add a song to get started"}</span>
-                </div>
-                <div className="music-controls">
+              <div className="music-now-meta">
+                <strong>{current?.title || "Nothing playing"}</strong>
+                <span>{current?.channelTitle || "Search and add a song"}</span>
+              </div>
+              <div className="music-controls">
+                {!audioReady ? (
                   <button
-                    className="icon-btn music-ctrl"
+                    className="primary-btn music-start-btn"
                     type="button"
-                    disabled={!current?.videoId || busy}
-                    onClick={handlePlayPause}
-                    title={room?.isPlaying ? "Pause" : "Play"}
+                    onClick={async () => {
+                      setAudioReady(true);
+                      if (room?.current?.videoId && !room.isPlaying) {
+                        try {
+                          setOptimisticPlaying(true);
+                          await writePlayback({
+                            isPlaying: true,
+                            positionSec: expectedPosition(room),
+                          });
+                        } catch {
+                          setOptimisticPlaying(null);
+                        }
+                      }
+                    }}
                   >
-                    {room?.isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                    <Volume2 size={14} />
+                    Start
                   </button>
-                  <button
-                    className="icon-btn music-ctrl"
-                    type="button"
-                    disabled={busy || (!current?.videoId && queue.length === 0)}
-                    onClick={handleSkip}
-                    title="Skip"
-                  >
-                    <SkipForward size={20} />
-                  </button>
-                </div>
+                ) : (
+                  <>
+                    <button
+                      className="icon-btn music-ctrl"
+                      type="button"
+                      disabled={!current?.videoId || busy}
+                      onClick={handlePlayPause}
+                      title={isPlaying ? "Pause" : "Play"}
+                    >
+                      {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                    </button>
+                    <button
+                      className="icon-btn music-ctrl"
+                      type="button"
+                      disabled={busy || (!current?.videoId && queue.length === 0)}
+                      onClick={handleSkip}
+                      title="Skip"
+                    >
+                      <SkipForward size={20} />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {canSeek && seekControls}
+
+            {!audioReady && (
+              <div className="music-audio-gate compact">
+                <p>Browsers block autoplay. Tap Start to unlock synced audio.</p>
               </div>
             )}
 
@@ -688,7 +952,7 @@ export default function MusicRoom({
                 </ul>
               )}
             </div>
-          </div>
+          </aside>
         </div>
       )}
     </>
