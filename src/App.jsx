@@ -34,6 +34,7 @@ import {
   LogOut,
   ListMusic,
   MessageCircle,
+  Mic2,
   Moon,
   MoreVertical,
   Pencil,
@@ -52,6 +53,7 @@ import "./themes.css";
 import CyberCity from "./CyberCity.jsx";
 import SakuraTree from "./SakuraTree.jsx";
 import OceanScene from "./OceanScene.jsx";
+import ConcertScene from "./ConcertScene.jsx";
 import MusicRoom from "./MusicRoom.jsx";
 
 const THEME_KEY = "chatter-theme";
@@ -90,6 +92,7 @@ const THEMES = [
   { id: "sakura", label: "Sakura", Icon: Flower2 },
   { id: "cyberpunk", label: "Cyberpunk", Icon: Zap },
   { id: "onepiece", label: "One Piece", Icon: Ship },
+  { id: "concert", label: "Concert", Icon: Mic2 },
 ];
 
 function ThemePicker({ theme, onChange }) {
@@ -1341,6 +1344,7 @@ export default function App() {
         {theme === "cyberpunk" && <CyberCity />}
         {theme === "sakura" && <SakuraTree />}
         {theme === "onepiece" && <OceanScene />}
+        {theme === "concert" && <ConcertScene />}
         {selectedFriendLive ? (
           <>
             <header className="chat-header">

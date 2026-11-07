@@ -210,6 +210,10 @@
   color: #1d5fa8;
 }
 
+[data-theme="concert"] .msg-link {
+  color: var(--concert-blue, #3de0ff);
+}
+
 /* ---------- Theme toggle ---------- */
 
 .header-actions {
@@ -1528,5 +1532,660 @@
   .moon-glint,
   .ship-lantern {
     opacity: 0;
+  }
+}
+
+/* ---------- Concert theme ---------- */
+
+:root[data-theme="concert"] {
+  --wa-bg: #08080e;
+  --wa-panel: #0e0e16;
+  --wa-header: #0a0a12;
+  --wa-hover: #161624;
+  --wa-active: #1c1c2e;
+  --wa-border: #2e2e44;
+  --wa-input: #12121c;
+  --wa-text: #e8ecf4;
+  --wa-muted: #8a90a8;
+  --wa-green: #ff4fd8;
+  --wa-green-hover: #ff7ae4;
+  --wa-outgoing: #1a0e1c;
+  --wa-incoming: #0c1420;
+  --wa-danger: #ff4f7a;
+  --wa-shadow: 0 0 28px rgba(255, 79, 216, 0.22);
+  --concert-pink: #ff4fd8;
+  --concert-blue: #3de0ff;
+  --concert-silver: #c0c8d8;
+}
+
+:root[data-theme="concert"] body {
+  font-family: "Saira", "Segoe UI", sans-serif;
+  font-weight: 500;
+  font-size: 15.5px;
+  letter-spacing: 0.01em;
+}
+
+:root[data-theme="concert"],
+:root[data-theme="concert"] body,
+:root[data-theme="concert"] #root {
+  background: var(--wa-bg);
+}
+
+[data-theme="concert"] .auth-brand h1,
+[data-theme="concert"] .chat-empty h2,
+[data-theme="concert"] .chat-peer strong,
+[data-theme="concert"] .user-chip strong,
+[data-theme="concert"] .section-label {
+  font-family: "Audiowide", "Saira", sans-serif;
+  letter-spacing: 0.06em;
+}
+
+[data-theme="concert"] .auth-brand h1 {
+  font-weight: 400;
+  font-size: 1.85rem;
+  color: var(--concert-silver);
+  text-shadow:
+    0 0 12px rgba(255, 79, 216, 0.55),
+    0 0 24px rgba(61, 224, 255, 0.35);
+}
+
+[data-theme="concert"] .chat-empty h2 {
+  font-size: 1.25rem;
+  color: var(--concert-blue);
+  text-shadow: 0 0 12px rgba(61, 224, 255, 0.55);
+}
+
+[data-theme="concert"] .chat-empty svg {
+  color: var(--concert-pink);
+  filter: drop-shadow(0 0 10px rgba(255, 79, 216, 0.7));
+}
+
+[data-theme="concert"] .chat-peer strong {
+  color: var(--concert-silver);
+  text-shadow: 0 0 8px rgba(192, 200, 216, 0.4);
+}
+
+[data-theme="concert"] .section-label {
+  color: var(--concert-pink);
+  font-size: 0.65rem;
+}
+
+[data-theme="concert"] .brand-icon,
+[data-theme="concert"] .primary-btn,
+[data-theme="concert"] .avatar.green,
+[data-theme="concert"] .search-form button,
+[data-theme="concert"] .composer-send,
+[data-theme="concert"] .unread-badge,
+[data-theme="concert"] .add-btn,
+[data-theme="concert"] .request-btn.accept {
+  color: #0a0a12;
+}
+
+[data-theme="concert"] .brand-icon {
+  box-shadow:
+    0 0 0 2px var(--concert-silver),
+    0 0 16px rgba(255, 79, 216, 0.65),
+    0 0 28px rgba(61, 224, 255, 0.35);
+  background: linear-gradient(135deg, var(--concert-pink), var(--concert-blue));
+}
+
+[data-theme="concert"] .primary-btn,
+[data-theme="concert"] .search-form button,
+[data-theme="concert"] .unread-badge,
+[data-theme="concert"] .add-btn,
+[data-theme="concert"] .request-btn.accept {
+  box-shadow: 0 0 14px rgba(255, 79, 216, 0.45);
+}
+
+[data-theme="concert"] .auth-screen {
+  background:
+    radial-gradient(ellipse 50% 40% at 20% 15%, rgba(255, 79, 216, 0.28), transparent 60%),
+    radial-gradient(ellipse 45% 35% at 85% 80%, rgba(61, 224, 255, 0.22), transparent 55%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(192, 200, 216, 0.08), transparent 70%),
+    linear-gradient(180deg, #08080e 0%, #12101c 100%);
+}
+
+[data-theme="concert"] .auth-card {
+  background: rgba(14, 14, 22, 0.88);
+  border: 1px solid rgba(192, 200, 216, 0.28);
+  box-shadow:
+    0 0 0 1px rgba(255, 79, 216, 0.15),
+    var(--wa-shadow);
+  backdrop-filter: blur(12px);
+}
+
+[data-theme="concert"] .auth-form input,
+[data-theme="concert"] .search-form input,
+[data-theme="concert"] .composer input {
+  border: 1px solid rgba(192, 200, 216, 0.25);
+  color: var(--wa-text);
+}
+
+[data-theme="concert"] .auth-form input:focus,
+[data-theme="concert"] .search-form input:focus,
+[data-theme="concert"] .composer input:focus {
+  box-shadow:
+    0 0 0 2px rgba(61, 224, 255, 0.45),
+    0 0 18px rgba(255, 79, 216, 0.25);
+  border-color: var(--concert-blue);
+}
+
+[data-theme="concert"] .error-banner {
+  background: rgba(255, 79, 122, 0.12);
+  color: var(--wa-danger);
+}
+
+[data-theme="concert"] .avatar {
+  background: #2a2a3c;
+  color: var(--concert-silver);
+  box-shadow:
+    0 0 0 2px rgba(61, 224, 255, 0.75),
+    0 0 10px rgba(255, 79, 216, 0.45);
+}
+
+[data-theme="concert"] .avatar.green {
+  background: linear-gradient(135deg, var(--concert-pink), var(--concert-blue));
+  color: #0a0a12;
+}
+
+[data-theme="concert"] .online-dot {
+  background: var(--concert-blue);
+  box-shadow: 0 0 8px var(--concert-blue);
+}
+
+[data-theme="concert"] .online-label,
+[data-theme="concert"] .typing-label {
+  color: var(--concert-blue);
+}
+
+[data-theme="concert"] .friend-row.active {
+  box-shadow: inset 3px 0 0 var(--concert-pink);
+}
+
+[data-theme="concert"] .request-btn.reject {
+  background: #1c1c28;
+  color: var(--wa-danger);
+}
+
+[data-theme="concert"] .chat-header,
+[data-theme="concert"] .sidebar-header {
+  background: linear-gradient(180deg, #0c0c14 0%, #0a0a12 100%);
+  border-bottom: 1px solid rgba(192, 200, 216, 0.35);
+  box-shadow: 0 1px 0 rgba(255, 79, 216, 0.15);
+}
+
+[data-theme="concert"] .sidebar {
+  border-right: 1px solid rgba(192, 200, 216, 0.18);
+}
+
+[data-theme="concert"] .icon-btn {
+  border-radius: 8px;
+  border: 1px solid rgba(192, 200, 216, 0.35);
+  background: linear-gradient(180deg, #1a1a24 0%, #101018 100%);
+  color: var(--concert-silver);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="concert"] .icon-btn:hover:not(:disabled) {
+  border-color: var(--concert-blue);
+  color: var(--concert-blue);
+  box-shadow: 0 0 10px rgba(61, 224, 255, 0.35);
+}
+
+[data-theme="concert"] .chat-pane {
+  background:
+    linear-gradient(180deg, rgba(8, 8, 14, 0.55) 0%, rgba(12, 10, 22, 0.35) 40%, rgba(8, 8, 14, 0.65) 100%);
+}
+
+[data-theme="concert"] .messages {
+  background: transparent;
+}
+
+[data-theme="concert"] .bubble {
+  border-radius: 4px 14px 14px 10px;
+  transform: skewX(-2deg);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid transparent;
+}
+
+[data-theme="concert"] .bubble > * {
+  transform: skewX(2deg);
+}
+
+[data-theme="concert"] .bubble.tail::before {
+  display: none;
+}
+
+[data-theme="concert"] .bubble.mine {
+  background: rgba(26, 14, 28, 0.82);
+  border-color: var(--concert-pink);
+  box-shadow:
+    0 0 12px rgba(255, 79, 216, 0.45),
+    inset 0 0 12px rgba(255, 79, 216, 0.08);
+  border-radius: 14px 4px 10px 14px;
+}
+
+[data-theme="concert"] .bubble.theirs {
+  background: rgba(12, 20, 32, 0.82);
+  border-color: var(--concert-blue);
+  box-shadow:
+    0 0 12px rgba(61, 224, 255, 0.4),
+    inset 0 0 12px rgba(61, 224, 255, 0.08);
+}
+
+[data-theme="concert"] .bubble p {
+  color: #e8ecf4;
+}
+
+[data-theme="concert"] .bubble time {
+  color: rgba(192, 200, 216, 0.65);
+}
+
+[data-theme="concert"] .bubble.pop-in.mine {
+  animation: concert-pop-mine 0.28s ease-out;
+}
+
+[data-theme="concert"] .bubble.pop-in.theirs {
+  animation: concert-pop-theirs 0.28s ease-out;
+}
+
+@keyframes concert-pop-mine {
+  from {
+    opacity: 0;
+    transform: skewX(-2deg) translateX(12px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: skewX(-2deg) translateX(0) scale(1);
+  }
+}
+
+@keyframes concert-pop-theirs {
+  from {
+    opacity: 0;
+    transform: skewX(-2deg) translateX(-12px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: skewX(-2deg) translateX(0) scale(1);
+  }
+}
+
+[data-theme="concert"] .bubble-row.highlight .bubble {
+  box-shadow:
+    0 0 0 2px var(--concert-silver),
+    0 0 18px rgba(255, 79, 216, 0.5);
+}
+
+[data-theme="concert"] .reply-quote {
+  border-left: 3px solid var(--concert-blue);
+  background: rgba(61, 224, 255, 0.08);
+}
+
+[data-theme="concert"] .typing-bubble span {
+  background: var(--concert-pink);
+}
+
+[data-theme="concert"] .msg-menu,
+[data-theme="concert"] .theme-menu {
+  background: #12121c;
+  border: 1px solid rgba(192, 200, 216, 0.3);
+  box-shadow: 0 0 20px rgba(255, 79, 216, 0.2);
+}
+
+[data-theme="concert"] .composer-wrap {
+  background:
+    linear-gradient(180deg, rgba(18, 18, 28, 0.92) 0%, #0a0a12 100%);
+  border-top: 2px solid transparent;
+  border-image: linear-gradient(90deg, var(--concert-blue), var(--concert-pink), var(--concert-blue)) 1;
+  box-shadow:
+    inset 0 8px 16px rgba(61, 224, 255, 0.06),
+    0 -4px 24px rgba(0, 0, 0, 0.4);
+  position: relative;
+}
+
+[data-theme="concert"] .composer-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--concert-blue) 0 8px,
+    transparent 8px 16px,
+    var(--concert-pink) 16px 24px,
+    transparent 24px 32px
+  );
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+[data-theme="concert"] .composer {
+  background: transparent;
+}
+
+[data-theme="concert"] .composer input {
+  background:
+    linear-gradient(180deg, rgba(20, 24, 40, 0.95), rgba(12, 12, 20, 0.98));
+  border-radius: 4px;
+  font-family: "Saira", sans-serif;
+  letter-spacing: 0.04em;
+  box-shadow: inset 0 0 20px rgba(61, 224, 255, 0.08);
+}
+
+[data-theme="concert"] .composer-context {
+  background: rgba(14, 14, 22, 0.9);
+  border-color: rgba(192, 200, 216, 0.25);
+}
+
+[data-theme="concert"] .composer-context.edit {
+  border-color: var(--concert-pink);
+}
+
+[data-theme="concert"] .composer-context.edit strong {
+  color: var(--concert-pink);
+}
+
+[data-theme="concert"] .composer-send {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--concert-pink), #b44fff 45%, var(--concert-blue));
+  box-shadow:
+    0 0 16px rgba(255, 79, 216, 0.65),
+    0 0 28px rgba(61, 224, 255, 0.35);
+}
+
+[data-theme="concert"] .composer-send svg {
+  transform: rotate(-45deg);
+}
+
+[data-theme="concert"] .composer-send:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--concert-blue), var(--concert-pink));
+  box-shadow:
+    0 0 20px rgba(61, 224, 255, 0.7),
+    0 0 32px rgba(255, 79, 216, 0.4);
+}
+
+[data-theme="concert"] .composer-send:active:not(:disabled) {
+  transform: rotate(45deg) scale(0.9);
+}
+
+[data-theme="concert"] .unread-divider::before,
+[data-theme="concert"] .unread-divider::after {
+  background: linear-gradient(90deg, transparent, var(--concert-pink), transparent);
+}
+
+[data-theme="concert"] .unread-divider span {
+  color: var(--concert-pink);
+  font-family: "Audiowide", sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+}
+
+[data-theme="concert"] .theme-toggle {
+  color: var(--concert-pink);
+}
+
+.theme-swatch.concert {
+  background: linear-gradient(135deg, #ff4fd8, #3de0ff);
+  color: #0a0a12;
+}
+
+/* Concert scene */
+
+.concert-scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.concert-scene-art {
+  position: absolute;
+  inset: 0;
+  opacity: 0.72;
+}
+
+.concert-atmosphere {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 45% at 50% 35%, rgba(255, 79, 216, 0.2), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 25% 60%, rgba(61, 224, 255, 0.12), transparent 65%),
+    radial-gradient(ellipse 40% 35% at 75% 55%, rgba(255, 79, 216, 0.1), transparent 65%);
+}
+
+.concert-spotlights {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(175deg, transparent 20%, rgba(61, 224, 255, 0.04) 45%, transparent 55%),
+    linear-gradient(185deg, transparent 15%, rgba(255, 79, 216, 0.05) 40%, transparent 60%);
+  animation: concert-spot-pulse 4.5s ease-in-out infinite alternate;
+}
+
+@keyframes concert-spot-pulse {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.concert-stage-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.concert-led-layer.a {
+  animation: concert-led-cycle 5s ease-in-out infinite alternate;
+}
+
+@keyframes concert-led-cycle {
+  from {
+    opacity: 0.25;
+    filter: hue-rotate(0deg);
+  }
+  to {
+    opacity: 0.5;
+    filter: hue-rotate(25deg);
+  }
+}
+
+.concert-viz-bar {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: concert-viz 1.1s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i) * 0.07s);
+}
+
+@keyframes concert-viz {
+  from {
+    transform: scaleY(0.35);
+    opacity: 0.45;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 0.9;
+  }
+}
+
+.concert-led-geo {
+  animation: concert-geo-spin 12s linear infinite;
+  transform-origin: 600px 140px;
+  transform-box: fill-box;
+}
+
+@keyframes concert-geo-spin {
+  from {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+
+.concert-cone.alt {
+  animation: concert-cone-flicker 3.2s ease-in-out infinite alternate;
+}
+
+@keyframes concert-cone-flicker {
+  from {
+    opacity: 0.05;
+  }
+  to {
+    opacity: 0.12;
+  }
+}
+
+.concert-performer.concert-vocal {
+  animation: concert-vocal-bob 1.4s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+@keyframes concert-vocal-bob {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-4px);
+  }
+}
+
+.concert-lightstick {
+  animation: concert-stick-wave var(--dur, 1.8s) ease-in-out var(--delay, 0s) infinite alternate;
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+
+@keyframes concert-stick-wave {
+  from {
+    transform: rotate(-14deg) translateY(0);
+  }
+  to {
+    transform: rotate(14deg) translateY(-6px);
+  }
+}
+
+.concert-confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.concert-confetti span {
+  position: absolute;
+  top: -12px;
+  border-radius: 1px;
+  opacity: 0.85;
+  animation: concert-confetti-fall var(--dur, 3.5s) linear var(--delay, 0s) infinite;
+}
+
+@keyframes concert-confetti-fall {
+  0% {
+    transform: translateY(0) rotate(var(--rot, 0deg));
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(110vh) rotate(calc(var(--rot, 0deg) + 220deg));
+    opacity: 0.15;
+  }
+}
+
+.concert-ticker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 26px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #0a0a14 0%, #050508 100%);
+  border-bottom: 1px solid rgba(61, 224, 255, 0.45);
+  box-shadow: 0 4px 16px rgba(255, 79, 216, 0.15);
+  opacity: 0.95;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* Sit under the chat header when a conversation is open */
+.chat-pane:has(> .chat-header) .concert-ticker {
+  top: 64px;
+}
+
+.concert-ticker-track {
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  animation: concert-ticker-scroll 28s linear infinite;
+  font-family: "Audiowide", "Saira", sans-serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--concert-blue, #3de0ff);
+  text-shadow: 0 0 8px rgba(61, 224, 255, 0.7);
+  line-height: 26px;
+}
+
+.concert-ticker-track span {
+  padding-right: 3rem;
+}
+
+@keyframes concert-ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Keep messages clear of the decorative ticker strip */
+[data-theme="concert"] .messages {
+  padding-top: 30px;
+  padding-bottom: 8px;
+}
+
+[data-theme="concert"] .chat-empty {
+  padding-top: 36px;
+}
+
+[data-theme="concert"] .composer-wrap {
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .concert-spotlights,
+  .concert-led-layer.a,
+  .concert-viz-bar,
+  .concert-led-geo,
+  .concert-cone.alt,
+  .concert-performer.concert-vocal,
+  .concert-lightstick,
+  .concert-confetti span,
+  .concert-ticker-track,
+  [data-theme="concert"] .bubble.pop-in.mine,
+  [data-theme="concert"] .bubble.pop-in.theirs {
+    animation: none;
+  }
+
+  .concert-confetti {
+    display: none;
+  }
+
+  .concert-ticker-track {
+    transform: none;
   }
 }
